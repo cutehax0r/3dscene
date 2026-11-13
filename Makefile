@@ -16,11 +16,13 @@ help:
 	@echo ""
 	@echo "Development targets:"
 	@echo "  make build                    Build for docker"
-	@echo "  make dev [PORT=8000]          Run a local HTTP server at http://localhost:PORT"
-	@echo "  make server                   Alias for 'make dev'"
+	@echo "  make dev [PORT=8000]          Run the HTTP server and open the browser"
+	@echo "  make server [PORT=8000]       Run the HTTP server at http://localhost:PORT"
 
-dev:
+server:
 	@echo "Serving on http://localhost:$(PORT)"
 	@python3 -m http.server $(PORT) --bind 127.0.0.1
 
-server: dev
+dev:
+	@(sleep 1; open http://localhost:$(PORT)) &
+	@$(MAKE) server

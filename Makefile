@@ -18,10 +18,19 @@ help:
 	@echo "  make deploy-github            Push a copy to github pages"
 	@echo ""
 	@echo "Development targets:"
-	@echo "  make build                    Build for docker"
+	@echo "  make health                   Check that the tools this project needs are installed"
 	@echo "  make dev [PORT=8000]          Run the HTTP server and open the browser"
 	@echo "  make server [PORT=8000]       Run the HTTP server at http://localhost:PORT"
+	@echo "  make build                    Build for docker"
 	@echo "  make clean                    Remove build output ($(DIST)/)"
+
+health:
+	@echo "Checking health..."
+	@command -v python3 > /dev/null || (echo "python3: missing" && exit 1)
+	@echo "python3: OK"
+	@command -v bun > /dev/null || (echo "bun: missing" && exit 1)
+	@echo "bun: OK"
+	@echo "Health check passed"
 
 server:
 	@echo "Serving on http://localhost:$(PORT)"
@@ -33,3 +42,4 @@ dev:
 
 clean:
 	rm -rf $(DIST)
+

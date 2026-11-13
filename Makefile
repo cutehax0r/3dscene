@@ -6,6 +6,7 @@ BINARY_NAME := 3dscene
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 PORT ?= 8000
 DIST := dist
+SOURCEMAP ?= none
 
 .DEFAULT_GOAL := help
 
@@ -21,7 +22,7 @@ help:
 	@echo "  make health                   Check that the tools this project needs are installed"
 	@echo "  make dev [PORT=8000]          Run the HTTP server and open the browser"
 	@echo "  make server [PORT=8000]       Run the HTTP server at http://localhost:PORT"
-	@echo "  make build                    Build for docker"
+	@echo "  make build [SOURCEMAP=linked] Bundle and minify the site into $(DIST)/"
 	@echo "  make clean                    Remove build output ($(DIST)/)"
 
 health:
@@ -42,4 +43,11 @@ dev:
 
 clean:
 	rm -rf $(DIST)
+
+build: clean
+	bun build index.html --outdir $(DIST) --minify --sourcemap=$(SOURCEMAP)
+	@sed '/<script type="importmap">/,/<\/script>/d' $(DIST)/index.html > $(DIST)/index.html.tmp
+	@mv $(DIST)/index.html.tmp $(DIST)/index.html
+	@echo "Built $(DIST)/:"
+	@ls -lh $(DIST) | tail -n +2
 

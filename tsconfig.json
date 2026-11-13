@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "three": ["./js/lib/three.webgpu.js"],
+      "three/tsl": ["./js/lib/three.tsl.js"]
+    }
+  }
+}

@@ -22,7 +22,10 @@ This is just a bare repo with some HTML, CSS, and Javascript
 
 * An option to dump the scene to disk as a highly compressed video format - h.256 probably
 
-* An opiton to just dump a screenshot
+* An option to just dump a screenshot
+
+* An option to 'compile' everything into a nice small package, maybe with a built-in HTTP server or
+  a docker container with nginx? Maybe it tries to 'minifi javascript'?  `make build`
 
 * `make deploy` that can dump this on my terrible little podman server
 

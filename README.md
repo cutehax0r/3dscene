@@ -9,11 +9,11 @@ This is just a bare repo with some HTML, CSS, and Javascript
 
 ## Plans/TODO
 
-* Deferred rendering. While it's more involved than forward rendering it brings freedom for lighting
-  and there are post-processing effects I want anyway
+* Some post-processing bloom etc. Rethinking deferred, if my primary case is offline I can just let
+  100 lights be slow.
 
 * "Standard" camera controls. I know I want basically the same thing every time I do a 3D scene so
-  it might as well just come out of the box.
+  it might as well just come out of the box. Most of this is a post-processing thing.
 
 * "Standard" lighting. 9/10 times I know the basic lighting I want. Having a minimal setup just
   makes sense.
@@ -24,6 +24,8 @@ This is just a bare repo with some HTML, CSS, and Javascript
 
 * An option to just dump a screenshot
 
+* An option to control quality. 'realtime' vs 'offline'.
+
 * An option to 'compile' everything into a nice small package, maybe with a built-in HTTP server or
   a docker container with nginx? Maybe it tries to 'minifi javascript'?  `make build`
 
@@ -33,3 +35,7 @@ This is just a bare repo with some HTML, CSS, and Javascript
 
 Once this is all in a reasonable state I'll add it to proj so a simple `proj new 3dscene foobar`
 will game me up and running quickly.
+
+I'm debating the right way to handle video. ffmpeg in a docker? should I bundle some kind of
+headless chromium? maybe a simple tauri application? should the server be a 'docker/nginx' or maybe
+i just have a couple lines of go/rust to be the server?

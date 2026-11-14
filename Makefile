@@ -1,6 +1,20 @@
-.PHONY: help server dev clean build publish release deploy rollback health
-# movie (start/end/w/h/fps/hdr)
-# picture (w/h/hdr)
+.PHONY: help health server dev build clean
+
+# Planned, in the order we intend to write them (not defined yet):
+#   image         build nginx from dist/
+#   run, stop     run/stop docker container
+#   release       build and push to github
+#   unrelease     delete a github release (see also unpublish)
+#   clean-tags    prune old image tags
+#   publish       push container to registry
+#   unpublish     remove an item from the registry (see also unrelease)
+#   published     list published container tags
+#   deploy        publish && make live on macmini
+#   rollback      roll back to the previous live image
+#   deploy-github build a github pages release
+#   movie         given start/end/width/height/fps/hdr/format - export a movie (h265/prores)
+#   picture       givne width/height/fps/time/hdr/format - export an image (png/hdr png?)
+.PHONY: image run stop publish published deploy rollback release deploy-github unrelease clean-tags
 
 BINARY_NAME := 3dscene
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")

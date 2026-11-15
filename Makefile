@@ -1,9 +1,8 @@
-.PHONY: help health server dev build clean release
+.PHONY: help health server dev build clean release unrelease
 
 # Planned, in the order we intend to write them (not defined yet):
 #   image         build nginx from dist/
 #   run, stop     run/stop docker container
-#   unrelease     purge a tag/release/etc from github
 #   clean-tags    prune old image tags
 #   publish       push container to registry
 #   unpublish     remove an item from the registry (see also unrelease)
@@ -22,9 +21,7 @@ PORT ?= 8000
 DIST := dist
 SOURCEMAP ?= none
 
-# `make release v1.2.3 [COMMIT]` takes positional arguments. They only become do-nothing targets
-# while `release` is the first goal, so a typo such as `make relase` still fails normally.
-ifeq ($(firstword $(MAKECMDGOALS)),release)
+ifneq ($(filter release unrelease,$(firstword $(MAKECMDGOALS))),)
 REL_TAG := $(word 2,$(MAKECMDGOALS))
 REL_COMMIT := $(word 3,$(MAKECMDGOALS))
 REL_EXTRA := $(wordlist 4,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
@@ -42,6 +39,7 @@ help:
 	@echo ""
 	@echo "Build targets:"
 	@echo "  make release v1.2.3 [COMMIT] [DRY=1]  Tag a commit (default HEAD) and let GitHub build the release"
+	@echo "  make unrelease v1.2.3 [DRY=1]         Remove a GitHub release"
 	@echo "  make deploy                           Push to local podman"
 	@echo "  make deploy-github                    Push to github pages"
 	@echo ""
@@ -119,3 +117,25 @@ release:
 		echo ""; echo "Error: release workflow failed: $$(gh run view "$$RUN" --json url -q .url)"; \
 		echo "Fix: make unrelease $$TAG then try again"; exit 1; \
 	fi
+
+unrelease:
+	@set -e; \
+	TAG="$(REL_TAG)"; \
+	if [ -z "$$TAG" ] || [ -n "$(REL_COMMIT)$(REL_EXTRA)" ]; then echo "Usage: make unrelease v1.2.3 [DRY=1]"; exit 1; fi; \
+	if ! echo "$$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$$'; then echo "Error: tag format v1.2.3"; exit 1; fi; \
+	command -v gh > /dev/null || { echo "Error: gh not installed"; exit 1; }; \
+	gh auth status > /dev/null 2>&1 || { echo "Error: gh not authorized (run: gh auth login)"; exit 1; }; \
+	HAS_RELEASE=""; HAS_REMOTE=""; HAS_LOCAL=""; \
+	if gh release view "$$TAG" > /dev/null 2>&1; then HAS_RELEASE=1; fi; \
+	if [ -n "$$(git ls-remote --tags origin "refs/tags/$$TAG")" ]; then HAS_REMOTE=1; fi; \
+	if git rev-parse -q --verify "refs/tags/$$TAG" > /dev/null; then HAS_LOCAL=1; fi; \
+	if [ -z "$$HAS_RELEASE$$HAS_REMOTE$$HAS_LOCAL" ]; then echo "Error: nothing to remove, $$TAG has no release or tag"; exit 1; fi; \
+	echo "This will remove, for $$TAG:"; \
+	if [ -n "$$HAS_RELEASE" ]; then echo "  GitHub release: $$(gh release view "$$TAG" --json url -q .url)"; fi; \
+	if [ -n "$$HAS_REMOTE" ]; then echo "  tag on origin"; fi; \
+	if [ -n "$$HAS_LOCAL" ]; then echo "  local tag"; fi; \
+	if [ -n "$(DRY)" ]; then echo "DRY RUN: nothing changed"; exit 0; fi; \
+	if [ -n "$$HAS_RELEASE" ]; then gh release delete "$$TAG" --cleanup-tag --yes; fi; \
+	if [ -n "$$(git ls-remote --tags origin "refs/tags/$$TAG")" ]; then git push --quiet origin --delete "refs/tags/$$TAG"; fi; \
+	if git rev-parse -q --verify "refs/tags/$$TAG" > /dev/null; then git tag -d "$$TAG" > /dev/null; fi; \
+	echo "Unreleased $$TAG"

@@ -6,7 +6,6 @@
 #   security add-generic-password -a "username" -s "https://registry.example.com" -w "your-password-here" -l "ENV: Private container registry"
 
 # Planned, in the order we intend to write them (not defined yet):
-#   rollback      roll back to the previous live image
 #   deploy-github build a github pages release
 #   movie         given start/end/width/height/fps/hdr/format - export a movie (h265/prores)
 #   picture       given width/height/fps/time/hdr/format - export an image (png/hdr png?)

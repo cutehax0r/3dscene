@@ -8,8 +8,6 @@
 # Planned, in the order we intend to write them (not defined yet):
 #   image         build nginx from dist/
 #   run, stop     run/stop docker container
-#   clean-tags    prune old image tags
-#   publish       push container to registry
 #   unpublish     remove an item from the registry (see also unrelease)
 #   published     list published container tags
 #   deploy        publish && make live on macmini
@@ -47,7 +45,7 @@ help:
 	@echo "Makefile targets for $(BINARY_NAME):"
 	@echo ""
 	@echo "Build targets:"
-	@echo "  make release v1.2.3 [COMMIT] [DRY=1]  Tag a commit (default HEAD) and let GitHub build the release"
+	@echo "  make release v1.2.3 [COMMIT] [DRY=1]  Tag a commit (default: HEAD) and let GitHub build the release"
 	@echo "  make unrelease v1.2.3 [DRY=1]         Remove a GitHub release"
 	@echo "  make deploy                           Push to local podman"
 	@echo "  make deploy-github                    Push to github pages"
@@ -69,8 +67,11 @@ health:
 	@command -v bun > /dev/null || (echo "bun: missing" && exit 1)
 	@echo "bun: OK"
 	@command -v gh > /dev/null || (echo "gh: missing (https://cli.github.com)" && exit 1)
-	@gh auth status > /dev/null 2>&1 || (echo "gh: not logged in (run: gh auth login)" && exit 1)
+	@gh auth status > /dev/null 2>&1 || (echo "gh: not logged in (gh auth login)" && exit 1)
 	@echo "gh: OK"
+	@command -v podman > /dev/null || (echo "podman: not installed" && exit 1)
+	@podman info > /dev/null 2>&1 || (echo "podman: not running (podman machine start)" && exit 1)
+	@echo "podman: OK"
 	@echo "Health check passed"
 
 server:

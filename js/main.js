@@ -4,7 +4,7 @@ const canvas = document.querySelector("#scene")
 const renderer = new THREE.WebGPURenderer({ canvas, antialias: true })
 renderer.setSize(1920, 1080, false)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.setClearColor(0xffff00)
+renderer.setClearColor(0xff00ff)
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
 
@@ -24,7 +24,7 @@ scene.add(cube)
 const plane = new THREE.Mesh(
   new THREE.PlaneGeometry(100, 10),
   new THREE.MeshStandardMaterial({
-    color: 0xffff00,
+    color: 0xff00ff,
     roughness: 0.4,
     metalness: 0.1
   })
@@ -37,7 +37,7 @@ scene.add(plane)
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
 scene.add(ambientLight)
 
-const sunLight = new THREE.DirectionalLight(0xffffff, 3)
+const sunLight = new THREE.DirectionalLight(0xffffff, 4)
 sunLight.position.set(0,5,0)
 sunLight.shadow.mapSize.set(1024, 1024)
 sunLight.castShadow = true

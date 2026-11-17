@@ -14,7 +14,7 @@
 #   movie         given start/end/width/height/fps/hdr/format - export a movie (h265/prores)
 #   picture       given width/height/fps/time/hdr/format - export an image (png/hdr png?)
 
-.PHONY: image run stop publish published deploy rollback deploy-github clean-tags
+.PHONY: image run stop publish published unpublish deploy rollback deploy-github clean-tags
 
 BINARY_NAME := 3dscene
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -26,7 +26,8 @@ TIMESTAMP := $(shell date +%Y%m%d_%H%M%S)
 # regular = so this only runs when we need it
 REGISTRY = $(shell security find-generic-password -l "ENV: Private container registry" 2>/dev/null | awk '/"svce"<blob>/ { val=$$0; sub(/.*=/,"",val); gsub(/"/,"",val); print val }')
 
-ifneq ($(filter release unrelease,$(firstword $(MAKECMDGOALS))),)
+# unpublishing needs lots of info, let's not do this unless we have to
+ifneq ($(filter release unrelease unpublish,$(firstword $(MAKECMDGOALS))),)
 REL_TAG := $(word 2,$(MAKECMDGOALS))
 REL_COMMIT := $(word 3,$(MAKECMDGOALS))
 REL_EXTRA := $(wordlist 4,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
@@ -59,7 +60,8 @@ help:
 	@echo "  make stop                          Stop and remove the local container"
 	@echo "  make publish                      Build container and push it to the registry"
 	@echo "  make published                     List container tags in the registry"
-	@echo "  make clean-tags [KEEP=5]           Remove old container image tags"
+	@echo "  make unpublish TAG [DRY=1]         Remove an image (and any tags sharing it) from the registry"
+	@echo "  make clean-tags [KEEP=5]         Remove old container image tags"
 
 health:
 	@echo "Checking health..."
@@ -114,8 +116,38 @@ published:
 	@[ -n "$(REGISTRY)" ] || { echo "Error: registry not in keychain"; exit 1; }
 	@USER=$$(security find-generic-password -l "ENV: Private container registry" | awk '/"acct"<blob>/ { val=$$0; sub(/.*=/,"",val); gsub(/"/,"",val); print val }'); \
 	PASS=$$(security find-generic-password -l "ENV: Private container registry" -w); \
-	OUT=$$(echo "user = \"$$USER:$$PASS\"" | curl -sf -K - https://$(REGISTRY)/v2/$(BINARY_NAME)/tags/list) || { echo "Nothing published yet, or the registry is unreachable"; exit 1; }; \
-	echo "$$OUT" | jq -r '.tags | sort | reverse | .[]'
+	OUT=$$(printf 'user = "%s:%s"\n' "$$USER" "$$PASS" | curl -s -K - -w '\n%{http_code}' https://$(REGISTRY)/v2/$(BINARY_NAME)/tags/list) || OUT=$$(printf '\nunreachable'); \
+	CODE=$$(echo "$$OUT" | tail -n 1); BODY=$$(echo "$$OUT" | sed '$$d'); \
+	if [ "$$CODE" = "404" ]; then echo "No $(BINARY_NAME) repository in the registry yet"; exit 0; fi; \
+	if [ "$$CODE" != "200" ]; then echo "Error: registry returned $$CODE: $$(echo "$$BODY" | jq -r '.errors[0] | "\(.code): \(.message)"' 2> /dev/null || echo "$$BODY")"; exit 1; fi; \
+	TAGS=$$(echo "$$BODY" | jq -r '(.tags // []) | sort | reverse | .[]'); \
+	if [ -z "$$TAGS" ]; then echo "No tags published for $(BINARY_NAME)"; else echo "$$TAGS"; fi
+
+unpublish:
+	@set -e; \
+	TAG="$(REL_TAG)"; REG="$(REGISTRY)"; BASE="https://$$REG/v2/$(BINARY_NAME)"; \
+	ACCEPT="Accept: application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json"; \
+	if [ -z "$$TAG" ] || [ -n "$(REL_COMMIT)$(REL_EXTRA)" ]; then echo "Usage: make unpublish TAG [DRY=1]  (see: make published)"; exit 1; fi; \
+	if ! echo "$$TAG" | grep -qE '^[A-Za-z0-9_.-]+$$'; then echo "Error: invalid tag"; exit 1; fi; \
+	[ -n "$$REG" ] || { echo "Error: registry not in keychain"; exit 1; }; \
+	RUSER=$$(security find-generic-password -l "ENV: Private container registry" | awk '/"acct"<blob>/ { val=$$0; sub(/.*=/,"",val); gsub(/"/,"",val); print val }'); \
+	RPASS=$$(security find-generic-password -l "ENV: Private container registry" -w); \
+	rcurl() { printf 'user = "%s:%s"\n' "$$RUSER" "$$RPASS" | curl -sf -K - "$$@"; }; \
+	digest() { rcurl -I -H "$$ACCEPT" "$$BASE/manifests/$$1" | tr -d '\r' | awk -F': ' 'tolower($$1)=="docker-content-digest" { print $$2 }'; }; \
+	DIGEST=$$(digest "$$TAG") || true; \
+	if [ -z "$$DIGEST" ]; then echo "Error: $$TAG not found in the registry (see: make published)"; exit 1; fi; \
+	SAME=""; \
+	for t in $$(rcurl "$$BASE/tags/list" | jq -r '.tags[]'); do \
+		if [ "$$(digest "$$t")" = "$$DIGEST" ]; then SAME="$$SAME $$t"; fi; \
+	done; \
+	echo "Removes image $$DIGEST from the registry, and every tag on it:$$SAME"; \
+	if [ -n "$(DRY)" ]; then echo "DRY RUN: nothing changed"; exit 0; fi; \
+	OUT=$$(printf 'user = "%s:%s"\n' "$$RUSER" "$$RPASS" | curl -s -K - -X DELETE -w '\n%{http_code}' "$$BASE/manifests/$$DIGEST") || OUT=$$(printf '\nunreachable'); \
+	CODE=$$(echo "$$OUT" | tail -n 1); BODY=$$(echo "$$OUT" | sed '$$d'); \
+	if [ "$$CODE" != "202" ]; then \
+		echo "Error: delete failed ($$CODE): $$(echo "$$BODY" | jq -r '.errors[0] | "\(.code): \(.message)"' 2> /dev/null || echo "$$BODY")"; exit 1; \
+	fi; \
+	echo "Unpublished$$SAME"
 
 clean-tags:
 	@podman images localhost/$(BINARY_NAME) --format '{{.Tag}}' | grep -v '^latest$$' | sort -r | tail -n +$$(( $(KEEP) + 1 )) | while read tag; do podman rmi $(BINARY_NAME):$$tag; done

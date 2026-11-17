@@ -9,7 +9,6 @@
 #   image         build nginx from dist/
 #   run, stop     run/stop docker container
 #   unpublish     remove an item from the registry (see also unrelease)
-#   published     list published container tags
 #   deploy        publish && make live on macmini
 #   rollback      roll back to the previous live image
 #   deploy-github build a github pages release

@@ -49,7 +49,8 @@ help:
 	@echo "  make release v1.2.3 [COMMIT] [DRY=1]  Tag a commit (default: HEAD) and let GitHub build the release"
 	@echo "  make unrelease v1.2.3 [DRY=1]         Remove a GitHub release"
 	@echo "  make deploy                           Publish the image and run it on the podman server"
-	@echo "  make deploy-github                    Push to github pages"
+	@echo "  make rollback                         Run the previous version on the podman server"
+	@echo "  make deploy-github                   Push to github pages"
 	@echo ""
 	@echo "Development targets:"
 	@echo "  make health                        Check that the tools this project needs are installed"
@@ -130,6 +131,17 @@ deploy: publish
 	@[ -n "$(SERVER_DOMAIN)" ] || { echo "Error: podman server domain not in keychain"; exit 1; }
 	ssh $(SERVER) "podman pull $(REGISTRY)/$(BINARY_NAME):$(TIMESTAMP) && podman pull $(REGISTRY)/$(BINARY_NAME):latest && { podman rm -f $(BINARY_NAME) > /dev/null 2>&1 || true; } && podman run -d --name $(BINARY_NAME) --restart=always --network $(NETWORK) --env VIRTUAL_HOST=$(DOMAIN) $(REGISTRY)/$(BINARY_NAME):$(TIMESTAMP)"
 	@echo "Deployed $(BINARY_NAME):$(TIMESTAMP) to $(DOMAIN)"
+
+rollback:
+	@[ -n "$(SERVER)" ] || { echo "Error: podman server not in keychain"; exit 1; }
+	@[ -n "$(SERVER_DOMAIN)" ] || { echo "Error: podman server domain not in keychain"; exit 1; }
+	@ssh $(SERVER) "IMG=$(REGISTRY)/$(BINARY_NAME); \
+		CUR=\$$(podman inspect $(BINARY_NAME) --format '{{.ImageName}}' 2> /dev/null | sed 's/.*://'); \
+		if [ -z \"\$$CUR\" ]; then echo 'Error: $(BINARY_NAME) is not deployed'; exit 1; fi; \
+		PREV=\$$(podman images \$$IMG --format '{{.Tag}}' | grep -v '^latest\$$' | sort -r | awk -v c=\"\$$CUR\" '\$$0 < c { print; exit }'); \
+		if [ -z \"\$$PREV\" ]; then echo \"Error: no version older than \$$CUR to roll back to\"; exit 1; fi; \
+		podman rm -f $(BINARY_NAME) > /dev/null 2>&1 || true; \
+		podman run -d --name $(BINARY_NAME) --restart=always --network $(NETWORK) --env VIRTUAL_HOST=$(DOMAIN) \$$IMG:\$$PREV > /dev/null && echo \"Rolled back $(BINARY_NAME) from \$$CUR to \$$PREV\""
 
 unpublish:
 	@set -e; \

@@ -1,4 +1,9 @@
 .PHONY: help health server dev build clean release unrelease
+# Config
+# CONTAINER_REGISTRY, PODMAN_SERVER, and DOMAIN come from the macos keychain.
+# Make sure they are setup
+#   security add-generic-password -a "username" -s "https://podman.example.com" -w "your-password-here" -l "ENV: Podman server" -c "podman.example.com"
+#   security add-generic-password -a "username" -s "https://registry.example.com" -w "your-password-here" -l "ENV: Private container registry"
 
 # Planned, in the order we intend to write them (not defined yet):
 #   image         build nginx from dist/
@@ -20,6 +25,10 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 PORT ?= 8000
 DIST := dist
 SOURCEMAP ?= none
+KEEP ?= 5
+TIMESTAMP := $(shell date +%Y%m%d_%H%M%S)
+# regular = so this only runs when we need it
+REGISTRY = $(shell security find-generic-password -l "ENV: Private container registry" 2>/dev/null | awk '/"svce"<blob>/ { val=$$0; sub(/.*=/,"",val); gsub(/"/,"",val); print val }')
 
 ifneq ($(filter release unrelease,$(firstword $(MAKECMDGOALS))),)
 REL_TAG := $(word 2,$(MAKECMDGOALS))
@@ -49,6 +58,9 @@ help:
 	@echo "  make server [PORT=8000]            Run HTTP server at http://localhost:PORT"
 	@echo "  make build [SOURCEMAP=linked]      Bundle and minify the site into $(DIST)/"
 	@echo "  make clean                         Remove build output ($(DIST)/)"
+	@echo "  make image                         Build container from $(DIST)/"
+	@echo "  make publish                       Build container and push it to the registry"
+	@echo "  make clean-tags [KEEP=5]           Remove old container image tags"
 
 health:
 	@echo "Checking health..."
@@ -78,6 +90,19 @@ build: clean
 	@mv $(DIST)/index.html.tmp $(DIST)/index.html
 	@echo "Built $(DIST)/:"
 	@ls -lh $(DIST) | tail -n +2
+
+image: build
+	podman build -t $(BINARY_NAME):$(TIMESTAMP) -t $(BINARY_NAME):latest .
+
+publish: image
+	@[ -n "$(REGISTRY)" ] || { echo "Error: registry not in keychain"; exit 1; }
+	podman tag $(BINARY_NAME):$(TIMESTAMP) $(REGISTRY)/$(BINARY_NAME):$(TIMESTAMP)
+	podman tag $(BINARY_NAME):latest $(REGISTRY)/$(BINARY_NAME):latest
+	podman push $(REGISTRY)/$(BINARY_NAME):$(TIMESTAMP)
+	podman push $(REGISTRY)/$(BINARY_NAME):latest
+
+clean-tags:
+	@podman images localhost/$(BINARY_NAME) --format '{{.Tag}}' | grep -v '^latest$$' | sort -r | tail -n +$$(( $(KEEP) + 1 )) | while read tag; do podman rmi $(BINARY_NAME):$$tag; done
 
 release:
 	@set -e; \

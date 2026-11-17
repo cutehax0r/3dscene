@@ -6,8 +6,6 @@
 #   security add-generic-password -a "username" -s "https://registry.example.com" -w "your-password-here" -l "ENV: Private container registry"
 
 # Planned, in the order we intend to write them (not defined yet):
-#   run, stop     run/stop docker container
-#   unpublish     remove an item from the registry (see also unrelease)
 #   deploy        publish && make live on macmini
 #   rollback      roll back to the previous live image
 #   deploy-github build a github pages release
@@ -27,6 +25,11 @@ TIMESTAMP := $(shell date +%Y%m%d_%H%M%S)
 REGISTRY = $(shell security find-generic-password -l "ENV: Private container registry" 2>/dev/null | awk '/"svce"<blob>/ { val=$$0; sub(/.*=/,"",val); gsub(/"/,"",val); print val }')
 
 # unpublishing needs lots of info, let's not do this unless we have to
+SERVER =$(shell security find-generic-password -l "ENV: Podman server" 2>/dev/null | awk '/"svce"<blob>/ { val=$$0; sub(/.*=/,"",val); gsub(/"/,"",val); print val }')
+SERVER_DOMAIN = $(shell security find-generic-password -l "ENV: Podman server" 2>/dev/null | awk '/"icmt"<blob>/ { val=$$0; sub(/.*=/,"",val); gsub(/"/,"",val); print val }')
+DOMAIN = $(BINARY_NAME).$(SERVER_DOMAIN)
+NETWORK := public
+
 ifneq ($(filter release unrelease unpublish,$(firstword $(MAKECMDGOALS))),)
 REL_TAG := $(word 2,$(MAKECMDGOALS))
 REL_COMMIT := $(word 3,$(MAKECMDGOALS))
@@ -46,7 +49,7 @@ help:
 	@echo "Build targets:"
 	@echo "  make release v1.2.3 [COMMIT] [DRY=1]  Tag a commit (default: HEAD) and let GitHub build the release"
 	@echo "  make unrelease v1.2.3 [DRY=1]         Remove a GitHub release"
-	@echo "  make deploy                           Push to local podman"
+	@echo "  make deploy                           Publish the image and run it on the podman server"
 	@echo "  make deploy-github                    Push to github pages"
 	@echo ""
 	@echo "Development targets:"
@@ -122,6 +125,12 @@ published:
 	if [ "$$CODE" != "200" ]; then echo "Error: registry returned $$CODE: $$(echo "$$BODY" | jq -r '.errors[0] | "\(.code): \(.message)"' 2> /dev/null || echo "$$BODY")"; exit 1; fi; \
 	TAGS=$$(echo "$$BODY" | jq -r '(.tags // []) | sort | reverse | .[]'); \
 	if [ -z "$$TAGS" ]; then echo "No tags published for $(BINARY_NAME)"; else echo "$$TAGS"; fi
+
+deploy: publish
+	@[ -n "$(SERVER)" ] || { echo "Error: podman server not in keychain"; exit 1; }
+	@[ -n "$(SERVER_DOMAIN)" ] || { echo "Error: podman server domain not in keychain"; exit 1; }
+	ssh $(SERVER) "podman pull $(REGISTRY)/$(BINARY_NAME):$(TIMESTAMP) && podman pull $(REGISTRY)/$(BINARY_NAME):latest && { podman rm -f $(BINARY_NAME) > /dev/null 2>&1 || true; } && podman run -d --name $(BINARY_NAME) --restart=always --network $(NETWORK) --env VIRTUAL_HOST=$(DOMAIN) $(REGISTRY)/$(BINARY_NAME):$(TIMESTAMP)"
+	@echo "Deployed $(BINARY_NAME):$(TIMESTAMP) to $(DOMAIN)"
 
 unpublish:
 	@set -e; \

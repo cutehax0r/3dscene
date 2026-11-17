@@ -6,7 +6,6 @@
 #   security add-generic-password -a "username" -s "https://registry.example.com" -w "your-password-here" -l "ENV: Private container registry"
 
 # Planned, in the order we intend to write them (not defined yet):
-#   image         build nginx from dist/
 #   run, stop     run/stop docker container
 #   unpublish     remove an item from the registry (see also unrelease)
 #   deploy        publish && make live on macmini
@@ -56,7 +55,9 @@ help:
 	@echo "  make build [SOURCEMAP=linked]      Bundle and minify the site into $(DIST)/"
 	@echo "  make clean                         Remove build output ($(DIST)/)"
 	@echo "  make image                         Build container from $(DIST)/"
-	@echo "  make publish                       Build container and push it to the registry"
+	@echo "  make run [PORT=8000]               Build container and run it at http://localhost:PORT"
+	@echo "  make stop                          Stop and remove the local container"
+	@echo "  make publish                      Build container and push it to the registry"
 	@echo "  make published                     List container tags in the registry"
 	@echo "  make clean-tags [KEEP=5]           Remove old container image tags"
 
@@ -93,7 +94,7 @@ build: clean
 	@ls -lh $(DIST) | tail -n +2
 
 image: build
-	podman build -t $(BINARY_NAME):$(TIMESTAMP) -t $(BINARY_NAME):latest .
+	tar -cf - Dockerfile $(DIST) | podman build -t $(BINARY_NAME):$(TIMESTAMP) -t $(BINARY_NAME):latest -
 
 publish: image
 	@[ -n "$(REGISTRY)" ] || { echo "Error: registry not in keychain"; exit 1; }
@@ -101,6 +102,13 @@ publish: image
 	podman tag $(BINARY_NAME):latest $(REGISTRY)/$(BINARY_NAME):latest
 	podman push $(REGISTRY)/$(BINARY_NAME):$(TIMESTAMP)
 	podman push $(REGISTRY)/$(BINARY_NAME):latest
+
+run: image stop
+	@podman run -d --name $(BINARY_NAME) -p 127.0.0.1:$(PORT):80 $(BINARY_NAME):latest > /dev/null
+	@echo "Running on http://localhost:$(PORT)"
+
+stop:
+	@podman rm -f $(BINARY_NAME) > /dev/null 2>&1 || true
 
 published:
 	@[ -n "$(REGISTRY)" ] || { echo "Error: registry not in keychain"; exit 1; }

@@ -58,6 +58,7 @@ help:
 	@echo "  make clean                         Remove build output ($(DIST)/)"
 	@echo "  make image                         Build container from $(DIST)/"
 	@echo "  make publish                       Build container and push it to the registry"
+	@echo "  make published                     List container tags in the registry"
 	@echo "  make clean-tags [KEEP=5]           Remove old container image tags"
 
 health:
@@ -101,6 +102,13 @@ publish: image
 	podman tag $(BINARY_NAME):latest $(REGISTRY)/$(BINARY_NAME):latest
 	podman push $(REGISTRY)/$(BINARY_NAME):$(TIMESTAMP)
 	podman push $(REGISTRY)/$(BINARY_NAME):latest
+
+published:
+	@[ -n "$(REGISTRY)" ] || { echo "Error: registry not in keychain"; exit 1; }
+	@USER=$$(security find-generic-password -l "ENV: Private container registry" | awk '/"acct"<blob>/ { val=$$0; sub(/.*=/,"",val); gsub(/"/,"",val); print val }'); \
+	PASS=$$(security find-generic-password -l "ENV: Private container registry" -w); \
+	OUT=$$(echo "user = \"$$USER:$$PASS\"" | curl -sf -K - https://$(REGISTRY)/v2/$(BINARY_NAME)/tags/list) || { echo "Nothing published yet, or the registry is unreachable"; exit 1; }; \
+	echo "$$OUT" | jq -r '.tags | sort | reverse | .[]'
 
 clean-tags:
 	@podman images localhost/$(BINARY_NAME) --format '{{.Tag}}' | grep -v '^latest$$' | sort -r | tail -n +$$(( $(KEEP) + 1 )) | while read tag; do podman rmi $(BINARY_NAME):$$tag; done

@@ -80,7 +80,7 @@ rightwall.castShadow = true
 rightwall.receiveShadow = true
 scene.add(rightwall)
 
-const backwall = new THREE.Mesh( new THREE.BoxGeometry(6.1, 1, .001), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
+const backwall = new THREE.Mesh( new THREE.BoxGeometry(6, 1, .001), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
 backwall.position.y = 1.25
 backwall.position.z = -1.5
 backwall.castShadow = true
@@ -134,8 +134,8 @@ lighta.position.y = 1.5
 lighta.position.z = 0
 lighta.castShadow = true
 lighta.shadow.mapSize.set(1024, 1024)
-lighta.shadow.bias = -0.0005
-lighta.shadow.normalBias = 0.02
+lighta.shadow.bias = -0.002
+lighta.shadow.normalBias = 0
 lighta.shadow.radius = 4
 lighta.shadow.blurSamples = 8
 lighta.shadow.camera.near = 0.1
@@ -148,8 +148,8 @@ lightb.position.y = 1.5
 lightb.position.z = 0
 lightb.castShadow = true
 lightb.shadow.mapSize.set(1024, 1024)
-lightb.shadow.bias = -0.0005
-lightb.shadow.normalBias = 0.02
+lightb.shadow.bias = -0.002
+lightb.shadow.normalBias = 0
 lightb.shadow.radius = 4
 lightb.shadow.blurSamples = 8
 lightb.shadow.camera.near = 0.1
@@ -164,9 +164,10 @@ probes.position.set(0, 1.3, 0)
 probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10 })
 scene.add(probes)
 const probeHelper = new LightProbeGridHelper(probes, 0.03)
+probeHelper.visible = false
 scene.add(probeHelper)
 
-// post processing
+// post processing ???
 
 // a small debug gui
 const gui = new GUI()

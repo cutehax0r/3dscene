@@ -84,7 +84,7 @@ backwall.castShadow = true
 backwall.receiveShadow = true
 scene.add(backwall)
 
-// -- room content
+// room content
 function col(x,z) {
   const column = new THREE.Mesh(
     new THREE.CylinderGeometry(0.1, 0.1, .66, 20, 10),
@@ -153,6 +153,11 @@ lightb.shadow.camera.near = 0.1
 lightb.shadow.camera.far = 8
 scene.add(lightb)
 
+// Let's try GI here
+
+await renderer.init()
+const giParams = { enabled: true, bounces: 0, showProbes: true  }
+
 // post processing
 
 // the direct blue/red lights are behaving well, casting through the door and mixing to a nice
@@ -161,9 +166,15 @@ scene.add(lightb)
 // occlusion is working but I think I could break that by adding a 'table' under the knots that
 // is very close
 
-
 renderer.setAnimationLoop(() => {
   controls.update()
   renderer.render(scene, camera)
 })
+
+// a small debug gui
+const gui = new GUI()
+gui.add(giParams, "enabled").name("global illumination").onChange((v) => { probes.visible = v })
+gui.add(giParams, "showProbes").name("show probes").onChange((v) => { probeHelper.visible = v })
+gui.add(giParams, "bounces", 0, 5, 1)
+
 

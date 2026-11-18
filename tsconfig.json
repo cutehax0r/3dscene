@@ -5,7 +5,8 @@
       "three": ["./js/lib/three.webgpu.js"],
       "three/webgpu": ["./js/lib/three.webgpu.js"],
       "three/tsl": ["./js/lib/three.tsl.js"],
-      "three/addons/*": ["./js/lib/addons/*"]
+      "three/addons/*": ["./js/lib/addons/*"],
+      "lil-gui": ["./js/lib/lil-gui.esm.js"]
     }
   }
 }

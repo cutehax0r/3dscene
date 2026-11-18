@@ -5,8 +5,6 @@
 #   security add-generic-password -a "username" -s "https://podman.example.com" -w "your-password-here" -l "ENV: Podman server" -c "podman.example.com"
 #   security add-generic-password -a "username" -s "https://registry.example.com" -w "your-password-here" -l "ENV: Private container registry"
 
-#   deploy-github build a github pages release
-
 .PHONY: image run stop publish published unpublish deploy rollback deploy-github clean-tags
 
 BINARY_NAME := 3dscene
@@ -71,6 +69,7 @@ health:
 	@command -v gh > /dev/null || (echo "gh: missing (https://cli.github.com)" && exit 1)
 	@gh auth status > /dev/null 2>&1 || (echo "gh: not logged in (gh auth login)" && exit 1)
 	@echo "gh: OK"
+	@if [ "$$(gh api 'repos/{owner}/{repo}/pages' -q .build_type 2> /dev/null)" = "workflow" ]; then echo "github pages: OK"; else echo "github pages: not enabled (optional; needed for make deploy-github)"; fi
 	@command -v podman > /dev/null || (echo "podman: not installed" && exit 1)
 	@podman info > /dev/null 2>&1 || (echo "podman: not running (podman machine start)" && exit 1)
 	@echo "podman: OK"
@@ -148,7 +147,7 @@ deploy-github:
 	git fetch --quiet origin; \
 	git cat-file -e "origin/$$BRANCH:.github/workflows/$$WF" 2> /dev/null || { echo "Error: .github/workflows/$$WF is not on origin/$$BRANCH (push it)"; exit 1; }; \
 	TYPE=$$(gh api "repos/{owner}/{repo}/pages" -q .build_type 2> /dev/null || true); \
-	if [ "$$TYPE" != "workflow" ]; then echo "Error: GitHub Pages is not set up. Repo settings > Pages > Source: GitHub Actions"; exit 1; fi; \
+	if [ "$$TYPE" != "workflow" ]; then echo "Error: GitHub Pages is not set up. Repo settings > Pages > Source: GitHub Actions or run 'gh api -X POST repos/cutehax0r/3dscene/pages -f build_type=workflow'"; exit 1; fi; \
 	if [ "$$(git rev-parse HEAD)" != "$$(git rev-parse "origin/$$BRANCH")" ]; then echo "Warning: deploying origin/$$BRANCH ($$(git rev-parse --short "origin/$$BRANCH")), not your local HEAD"; fi; \
 	PREV=$$(gh run list --workflow "$$WF" --event workflow_dispatch --limit 1 --json databaseId -q '.[0].databaseId' 2> /dev/null || true); \
 	gh workflow run "$$WF" --ref "$$BRANCH"; \

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import GUI from "lil-gui";
 
 // basic setup
 
@@ -153,10 +154,7 @@ lightb.shadow.camera.near = 0.1
 lightb.shadow.camera.far = 8
 scene.add(lightb)
 
-// Let's try GI here
-
 await renderer.init()
-const giParams = { enabled: true, bounces: 0, showProbes: true  }
 
 // post processing
 
@@ -166,15 +164,12 @@ const giParams = { enabled: true, bounces: 0, showProbes: true  }
 // occlusion is working but I think I could break that by adding a 'table' under the knots that
 // is very close
 
+// a small debug gui
+const gui = new GUI()
+gui.add(lighta, "intensity", 0, 10).name("light a")
+gui.add(lightb, "intensity", 0, 10).name("light b")
+
 renderer.setAnimationLoop(() => {
   controls.update()
   renderer.render(scene, camera)
 })
-
-// a small debug gui
-const gui = new GUI()
-gui.add(giParams, "enabled").name("global illumination").onChange((v) => { probes.visible = v })
-gui.add(giParams, "showProbes").name("show probes").onChange((v) => { probeHelper.visible = v })
-gui.add(giParams, "bounces", 0, 5, 1)
-
-

@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
+import { LightProbeGridHelper } from "three/addons/helpers/LightProbeGridHelper.js";
 import GUI from "lil-gui";
 
 // basic setup
@@ -156,13 +158,15 @@ scene.add(lightb)
 
 await renderer.init()
 
-// post processing
+// setup the grid, fill the 'rooms' with 12 wide, 3 high, 6 deep worth of probes
+const probes = new LightProbeGrid(6.2, 1.1, 3.2, 12, 3, 6)
+probes.position.set(0, 1.3, 0)
+probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10 })
+scene.add(probes)
+const probeHelper = new LightProbeGridHelper(probes, 0.03)
+scene.add(probeHelper)
 
-// the direct blue/red lights are behaving well, casting through the door and mixing to a nice
-// purple. The issue is that the columns cast super dark shadow on the wall but the walls should be
-// bouncing light on to them. The corners of everything look pretty good - almost like ambiet
-// occlusion is working but I think I could break that by adding a 'table' under the knots that
-// is very close
+// post processing
 
 // a small debug gui
 const gui = new GUI()

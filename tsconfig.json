@@ -3,7 +3,9 @@
     "baseUrl": ".",
     "paths": {
       "three": ["./js/lib/three.webgpu.js"],
-      "three/tsl": ["./js/lib/three.tsl.js"]
+      "three/webgpu": ["./js/lib/three.webgpu.js"],
+      "three/tsl": ["./js/lib/three.tsl.js"],
+      "three/addons/*": ["./js/lib/addons/*"]
     }
   }
 }

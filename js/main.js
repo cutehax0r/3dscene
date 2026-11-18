@@ -11,7 +11,7 @@ const renderer = new THREE.WebGPURenderer({ canvas, antialias: true })
 
 renderer.setSize(1920, 1080, false)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-renderer.setClearColor(0x111111)
+renderer.setClearColor(0x000000) // this contributes to GI lighting
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
 
@@ -161,7 +161,7 @@ await renderer.init()
 // setup the grid, fill the 'rooms' with 12 wide, 3 high, 6 deep worth of probes
 const probes = new LightProbeGrid(6.2, 1.1, 3.2, 12, 3, 6)
 probes.position.set(0, 1.3, 0)
-probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10 })
+probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, bounces: 1 })
 scene.add(probes)
 const probeHelper = new LightProbeGridHelper(probes, 0.03)
 probeHelper.visible = false
@@ -174,14 +174,55 @@ const gui = new GUI()
 const gi = {
   enabled: true,
   showProbes: false,
-  rebake: () => console.log("bake")
+  bounces: 1,
+  status: "idle",
+  rebake: () => startBake(),
+}
+
+// rebuild the gi lighting, const probes = new LightProbeGrid(6.2, 1.1, 3.2, x, y, z)
+const totalProbes = 216 // x * y * z
+const bakeJob = { running: false, pass: 0, next: 0 }
+
+// this purges the current bake and starts a new one so the scene dims. can we have two and lerp
+// between them when the second finishes? it'd add 
+function startBake() {
+  bakeJob.running = true
+  bakeJob.pass = 0
+  bakeJob.next = 0
+}
+
+function stepBake() {
+  if (!bakeJob.running) return
+  // how many to update per frame. higher = more responsive but risks frame lag - just do em all
+  const count = Math.min(216, totalProbes - bakeJob.next)
+
+  // pass 0 - direct light only - don't include any probes, then for pass 1+ turn them on
+  probes.visible = bakeJob.pass > 0
+  probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, start: bakeJob.next, count, pass: bakeJob.pass })
+  probes.visible = gi.enabled
+
+  bakeJob.next += count
+  if (bakeJob.next >= totalProbes) {
+    bakeJob.next = 0
+    bakeJob.pass++
+  }
+  if (bakeJob.pass > 1) {
+    bakeJob.running = false
+    probeHelper.update()
+    gi.status = "idle"
+  } else {
+    gi.status = `pass ${bakeJob.pass}: ${bakeJob.next}/${totalProbes}`
+  }
 }
 gui.add(lighta, "intensity", 0, 10).name("light a")
 gui.add(lightb, "intensity", 0, 10).name("light b")
 gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.visible = v)
 gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelper.visible = v)
+gui.add(gi, "rebake").name("bake")
+gui.add(gi, "status").name("bake status").listen().disable()
 
 renderer.setAnimationLoop(() => {
   controls.update()
+  stepBake()
   renderer.render(scene, camera)
 })

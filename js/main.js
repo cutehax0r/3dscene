@@ -166,8 +166,16 @@ await renderer.init()
 
 // a small debug gui
 const gui = new GUI()
+const gi = {
+  enabled: true,
+  showProbes: true,
+  rebake: () => console.log("bake")
+}
 gui.add(lighta, "intensity", 0, 10).name("light a")
 gui.add(lightb, "intensity", 0, 10).name("light b")
+gui.add(gi, "enabled").name("GI enabled")
+gui.add(gi, "showProbes").name("show probes")
+gui.add(gi, "rebake").name("bake")
 
 renderer.setAnimationLoop(() => {
   controls.update()

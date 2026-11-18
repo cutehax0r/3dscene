@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "allowJs": true,
     "baseUrl": ".",
     "paths": {
       "three": ["./js/lib/three.webgpu.js"],
@@ -8,5 +9,6 @@
       "three/addons/*": ["./js/lib/addons/*"],
       "lil-gui": ["./js/lib/lil-gui.esm.js"]
     }
-  }
+  },
+  "include": ["js/*.js"]
 }

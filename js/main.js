@@ -42,42 +42,42 @@ ground.castShadow = true
 ground.receiveShadow = true
 scene.add(ground)
 
-const leftwall = new THREE.Mesh( new THREE.BoxGeometry(.1, 1, 3), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
+const leftwall = new THREE.Mesh( new THREE.BoxGeometry(.001, 1, 3), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
 leftwall.position.x = -3
 leftwall.position.y = 1.25
 leftwall.castShadow = true
 leftwall.receiveShadow = true
 scene.add(leftwall)
 
-const centerawall = new THREE.Mesh( new THREE.BoxGeometry(.1, 1, 1.25), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
+const centerawall = new THREE.Mesh( new THREE.BoxGeometry(.2, 1, 1.25), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
 centerawall.position.z = -.875
 centerawall.position.y = 1.25
 centerawall.castShadow = true
 centerawall.receiveShadow = true
 scene.add(centerawall)
 
-const centerbwall = new THREE.Mesh( new THREE.BoxGeometry(.1, .2, .5), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
+const centerbwall = new THREE.Mesh( new THREE.BoxGeometry(.2, .2, .5), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
 centerbwall.position.z = 0
 centerbwall.position.y = 1.65
 centerbwall.castShadow = true
 centerbwall.receiveShadow = true
 scene.add(centerbwall)
 
-const centercwall = new THREE.Mesh( new THREE.BoxGeometry(.1, 1, 1.25), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
+const centercwall = new THREE.Mesh( new THREE.BoxGeometry(.2, 1, 1.25), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
 centercwall.position.z = .875
 centercwall.position.y = 1.25
 centercwall.castShadow = true
 centercwall.receiveShadow = true
 scene.add(centercwall)
 
-const rightwall = new THREE.Mesh( new THREE.BoxGeometry(.1, 1, 3), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
+const rightwall = new THREE.Mesh( new THREE.BoxGeometry(.001, 1, 3), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
 rightwall.position.x = 3
 rightwall.position.y = 1.25
 rightwall.castShadow = true
 rightwall.receiveShadow = true
 scene.add(rightwall)
 
-const backwall = new THREE.Mesh( new THREE.BoxGeometry(6.1, 1, .1), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
+const backwall = new THREE.Mesh( new THREE.BoxGeometry(6.1, 1, .001), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
 backwall.position.y = 1.25
 backwall.position.z = -1.5
 backwall.castShadow = true

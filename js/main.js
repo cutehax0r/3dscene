@@ -172,14 +172,13 @@ scene.add(probeHelper)
 const gui = new GUI()
 const gi = {
   enabled: true,
-  showProbes: true,
+  showProbes: false,
   rebake: () => console.log("bake")
 }
 gui.add(lighta, "intensity", 0, 10).name("light a")
 gui.add(lightb, "intensity", 0, 10).name("light b")
-gui.add(gi, "enabled").name("GI enabled")
-gui.add(gi, "showProbes").name("show probes")
-gui.add(gi, "rebake").name("bake")
+gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.visible = v)
+gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelper.visible = v)
 
 renderer.setAnimationLoop(() => {
   controls.update()

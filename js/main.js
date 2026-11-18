@@ -53,6 +53,7 @@ const centerawall = new THREE.Mesh( new THREE.BoxGeometry(.1, 1, 1.25), new THRE
 centerawall.position.z = -.875
 centerawall.position.y = 1.25
 centerawall.castShadow = true
+centerawall.receiveShadow = true
 scene.add(centerawall)
 
 const centerbwall = new THREE.Mesh( new THREE.BoxGeometry(.1, .2, .5), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
@@ -86,7 +87,7 @@ scene.add(backwall)
 // -- room content
 function col(x,z) {
   const column = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.1, 0.1, 1, 10, 5),
+    new THREE.CylinderGeometry(0.1, 0.1, 1, 20, 10),
     new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughtness: 0.5 })
   )
   column.position.x = x
@@ -153,6 +154,13 @@ lightb.shadow.camera.far = 8
 scene.add(lightb)
 
 // post processing
+
+// the direct blue/red lights are behaving well, casting through the door and mixing to a nice
+// purple. The issue is that the columns cast super dark shadow on the wall but the walls should be
+// bouncing light on to them. The corners of everything look pretty good - almost like ambiet
+// occlusion is working but I think I could break that by adding a 'table' under the knots that
+// is very close
+
 
 renderer.setAnimationLoop(() => {
   controls.update()

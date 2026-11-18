@@ -87,11 +87,11 @@ scene.add(backwall)
 // -- room content
 function col(x,z) {
   const column = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.1, 0.1, 1, 20, 10),
-    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughtness: 0.5 })
+    new THREE.CylinderGeometry(0.1, 0.1, .66, 20, 10),
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
   )
   column.position.x = x
-  column.position.y = 1.25
+  column.position.y = 1.085
   column.position.z = z
   column.receiveShadow = true
   column.castShadow = true

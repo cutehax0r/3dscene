@@ -5,10 +5,7 @@
 #   security add-generic-password -a "username" -s "https://podman.example.com" -w "your-password-here" -l "ENV: Podman server" -c "podman.example.com"
 #   security add-generic-password -a "username" -s "https://registry.example.com" -w "your-password-here" -l "ENV: Private container registry"
 
-# Planned, in the order we intend to write them (not defined yet):
 #   deploy-github build a github pages release
-#   movie         given start/end/width/height/fps/hdr/format - export a movie (h265/prores)
-#   picture       given width/height/fps/time/hdr/format - export an image (png/hdr png?)
 
 .PHONY: image run stop publish published unpublish deploy rollback deploy-github clean-tags
 
@@ -49,7 +46,7 @@ help:
 	@echo "  make unrelease v1.2.3 [DRY=1]         Remove a GitHub release"
 	@echo "  make deploy                           Publish the image and run it on the podman server"
 	@echo "  make rollback                         Run the previous version on the podman server"
-	@echo "  make deploy-github                   Push to github pages"
+	@echo "  make deploy-github                    Publish the site to GitHub Pages"
 	@echo ""
 	@echo "Development targets:"
 	@echo "  make health                        Check that the tools this project needs are installed"
@@ -60,10 +57,10 @@ help:
 	@echo "  make image                         Build container from $(DIST)/"
 	@echo "  make run [PORT=8000]               Build container and run it at http://localhost:PORT"
 	@echo "  make stop                          Stop and remove the local container"
-	@echo "  make publish                      Build container and push it to the registry"
+	@echo "  make publish                       Build container and push it to the registry"
 	@echo "  make published                     List container tags in the registry"
 	@echo "  make unpublish TAG [DRY=1]         Remove an image (and any tags sharing it) from the registry"
-	@echo "  make clean-tags [KEEP=5]         Remove old container image tags"
+	@echo "  make clean-tags [KEEP=5]           Remove old container image tags"
 
 health:
 	@echo "Checking health..."
@@ -142,6 +139,32 @@ rollback:
 		podman rm -f $(BINARY_NAME) > /dev/null 2>&1 || true; \
 		podman run -d --name $(BINARY_NAME) --restart=always --network $(NETWORK) --env VIRTUAL_HOST=$(DOMAIN) \$$IMG:\$$PREV > /dev/null && echo \"Rolled back $(BINARY_NAME) from \$$CUR to \$$PREV\""
 
+deploy-github:
+	@set -e; \
+	WF=pages.yml; \
+	command -v gh > /dev/null || { echo "Error: gh not installed"; exit 1; }; \
+	gh auth status > /dev/null 2>&1 || { echo "Error: gh not authorized (run: gh auth login)"; exit 1; }; \
+	BRANCH=$$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name); \
+	git fetch --quiet origin; \
+	git cat-file -e "origin/$$BRANCH:.github/workflows/$$WF" 2> /dev/null || { echo "Error: .github/workflows/$$WF is not on origin/$$BRANCH (push it)"; exit 1; }; \
+	TYPE=$$(gh api "repos/{owner}/{repo}/pages" -q .build_type 2> /dev/null || true); \
+	if [ "$$TYPE" != "workflow" ]; then echo "Error: GitHub Pages is not set up. Repo settings > Pages > Source: GitHub Actions"; exit 1; fi; \
+	if [ "$$(git rev-parse HEAD)" != "$$(git rev-parse "origin/$$BRANCH")" ]; then echo "Warning: deploying origin/$$BRANCH ($$(git rev-parse --short "origin/$$BRANCH")), not your local HEAD"; fi; \
+	PREV=$$(gh run list --workflow "$$WF" --event workflow_dispatch --limit 1 --json databaseId -q '.[0].databaseId' 2> /dev/null || true); \
+	gh workflow run "$$WF" --ref "$$BRANCH"; \
+	echo "Started $$WF on $$BRANCH, waiting for the run"; \
+	RUN=""; i=0; \
+	while [ -z "$$RUN" ] && [ $$i -lt 30 ]; do \
+		NEW=$$(gh run list --workflow "$$WF" --event workflow_dispatch --limit 1 --json databaseId -q '.[0].databaseId' 2> /dev/null || true); \
+		if [ -n "$$NEW" ] && [ "$$NEW" != "$$PREV" ]; then RUN="$$NEW"; else sleep 2; i=$$((i + 1)); fi; \
+	done; \
+	if [ -z "$$RUN" ]; then echo "Error: the workflow run didn't start in 60s. Check the Actions tab on GitHub"; exit 1; fi; \
+	if gh run watch "$$RUN" --compact --exit-status; then \
+		echo ""; echo "Deployed: $$(gh api "repos/{owner}/{repo}/pages" -q .html_url)"; \
+	else \
+		echo ""; echo "Error: pages workflow failed: $$(gh run view "$$RUN" --json url -q .url)"; exit 1; \
+	fi
+
 unpublish:
 	@set -e; \
 	TAG="$(REL_TAG)"; REG="$(REGISTRY)"; BASE="https://$$REG/v2/$(BINARY_NAME)"; \
@@ -189,9 +212,9 @@ release:
 	if [ -n "$$(git status --porcelain)" ]; then echo "Warning: uncommitted changes are not in the release"; fi; \
 	if [ -n "$(DRY)" ]; then \
 		echo "DRY RUN: checks passed. Plan:"; \
-		echo "  git tag $$TAG $$SHORT"; \
-		echo "  git push origin $$TAG"; \
-		echo "  poll $$WF github workflow and confirm release"; \
+		echo "* git tag $$TAG $$SHORT"; \
+		echo "* git push origin $$TAG"; \
+		echo "* poll $$WF github workflow and confirm release"; \
 		exit 0; \
 	fi; \
 	git tag "$$TAG" "$$SHA"; \
@@ -223,9 +246,9 @@ unrelease:
 	if git rev-parse -q --verify "refs/tags/$$TAG" > /dev/null; then HAS_LOCAL=1; fi; \
 	if [ -z "$$HAS_RELEASE$$HAS_REMOTE$$HAS_LOCAL" ]; then echo "Error: nothing to remove, $$TAG has no release or tag"; exit 1; fi; \
 	echo "This will remove, for $$TAG:"; \
-	if [ -n "$$HAS_RELEASE" ]; then echo "  GitHub release: $$(gh release view "$$TAG" --json url -q .url)"; fi; \
-	if [ -n "$$HAS_REMOTE" ]; then echo "  tag on origin"; fi; \
-	if [ -n "$$HAS_LOCAL" ]; then echo "  local tag"; fi; \
+	if [ -n "$$HAS_RELEASE" ]; then echo "* GitHub release: $$(gh release view "$$TAG" --json url -q .url)"; fi; \
+	if [ -n "$$HAS_REMOTE" ]; then echo "* tag on origin"; fi; \
+	if [ -n "$$HAS_LOCAL" ]; then echo "* local tag"; fi; \
 	if [ -n "$(DRY)" ]; then echo "DRY RUN: nothing changed"; exit 0; fi; \
 	if [ -n "$$HAS_RELEASE" ]; then gh release delete "$$TAG" --cleanup-tag --yes; fi; \
 	if [ -n "$$(git ls-remote --tags origin "refs/tags/$$TAG")" ]; then git push --quiet origin --delete "refs/tags/$$TAG"; fi; \

@@ -180,7 +180,7 @@ const gi = {
 }
 
 // rebuild the gi lighting, const probes = new LightProbeGrid(6.2, 1.1, 3.2, x, y, z)
-const totalProbes = 216 // x * y * z
+const totalProbes = 486 // x * y * z
 const bakeJob = { running: false, pass: 0, next: 0 }
 
 // this purges the current bake and starts a new one so the scene dims. can we have two and lerp
@@ -194,7 +194,7 @@ function startBake() {
 function stepBake() {
   if (!bakeJob.running) return
   // how many to update per frame. higher = more responsive but risks frame lag - just do em all
-  const count = Math.min(216, totalProbes - bakeJob.next)
+  const count = Math.min(486, totalProbes - bakeJob.next)
 
   // pass 0 - direct light only - don't include any probes, then for pass 1+ turn them on
   probes.visible = bakeJob.pass > 0

@@ -30,20 +30,20 @@ window.addEventListener('resize', () => {
 })
 
 // geometry
+function wall(x,y,z,w,h,d) {
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
+  )
+  wall.position.x = x
+  wall.position.y = y
+  wall.position.z = z
+  wall.castShadow = true
+  wall.receiveShadow = true
+  return wall
+}
+scene.add(wall(0, .75, 0, 6.1, 0.1, 3))
 
-const ground = new THREE.Mesh(
-  new THREE.BoxGeometry(6.1, 0.1, 3),
-  new THREE.MeshStandardMaterial({
-    color: 0xeeeeee,
-    metalness: 0.01,
-    roughness: 0.5
-  })
-)
-ground.position.x = 0
-ground.position.y = .75
-ground.castShadow = true
-ground.receiveShadow = true
-scene.add(ground)
 
 const leftwall = new THREE.Mesh( new THREE.BoxGeometry(.001, 1, 3), new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 }))
 leftwall.position.x = -3
@@ -126,6 +126,9 @@ knotb.position.x = 1.5
 knotb.position.y = 1.25
 scene.add(knotb)
 
+// some random boxes for GI
+//
+
 // lighting
 
 const lighta = new THREE.PointLight(0xffaa99, 3, 5, .5)
@@ -160,12 +163,12 @@ await renderer.init()
 
 // global illumination
 const probeconf = [
-  {x: 2.9, y: 1.1, z: 3.2, at: [-1.55, 1.3, 0], w: 6, h: 3, d: 6, bakerate: .5, bounces: 1}, // room 1
-  {x: 2.9, y: 1.1, z: 3.2, at: [1.55, 1.3, 0], w: 6, h: 3, d: 6, bakerate: 0.5, bounces: 1} // room 2
+  {loc: [-1.55, 1.3, 0], size: [2.9, 1.1, 3.2], count: [6, 3, 5], bakerate: 0.5, bounces: 1}, // room 1
+  {loc: [1.55, 1.3, 0], size: [2.9, 1.1, 3.2], count: [6, 3, 5], bakerate: 0.5, bounces: 1} // room 2
 ]
 const probes = probeconf.map((grid) => {
-  const g = new LightProbeGrid(grid.x, grid.y, grid.z, grid.w, grid.h, grid.d)
-  g.position.set(...grid.at)
+  const g = new LightProbeGrid(...grid.size, ...grid.count)
+  g.position.set(...grid.loc)
   g.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, bounces: grid.bounces })
   scene.add(g)
   return g
@@ -189,7 +192,7 @@ function stepBake() {
   probeconf.forEach((conf, i) => {
     const job = bakeJobs[i]
     if (!job.running) return
-    const totalProbes = conf.w * conf.h * conf.d
+    const totalProbes = conf.count[0] * conf.count[1] * conf.count[2]
     const count = Math.min(Math.max(1, Math.floor(conf.bakerate * totalProbes)), totalProbes - job.next)
     probes.forEach((g) => g.visible = false)
     probes[i].bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, start: job.next, count, pass: job.pass })

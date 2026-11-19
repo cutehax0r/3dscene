@@ -158,15 +158,54 @@ scene.add(lightb)
 
 await renderer.init()
 
-// setup the grid, fill the 'rooms' with 18 wide, 3 high, 9 deep worth of probes
-const probeconf = {x: 6.2, y: 1.1, z: 3.2, w: 18, h: 3, d: 9, bakerate: 0.5, bounces: 1}
-const probes = new LightProbeGrid(probeconf.x, probeconf.y, probeconf.z, probeconf.w, probeconf.h, probeconf.d)
-probes.position.set(0, 1.3, 0)
-probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, bounces: probeconf.bounces })
-scene.add(probes)
-const probeHelper = new LightProbeGridHelper(probes, 0.03)
-probeHelper.visible = false
-scene.add(probeHelper)
+// global illumination
+const probeconf = [
+  {x: 2.9, y: 1.1, z: 3.2, at: [-1.55, 1.3, 0], w: 6, h: 3, d: 6, bakerate: .5, bounces: 1}, // room 1
+  {x: 2.9, y: 1.1, z: 3.2, at: [1.55, 1.3, 0], w: 6, h: 3, d: 6, bakerate: 0.5, bounces: 1} // room 2
+]
+const probes = probeconf.map((grid) => {
+  const g = new LightProbeGrid(grid.x, grid.y, grid.z, grid.w, grid.h, grid.d)
+  g.position.set(...grid.at)
+  g.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, bounces: grid.bounces })
+  scene.add(g)
+  return g
+})
+
+const probeHelpers = probes.map((g) => {
+  const h = new LightProbeGridHelper(g, 0.03)
+  h.visible = false
+  scene.add(h)
+  return h
+})
+
+const bakeJobs = probeconf.map(() => ({ running: false, pass: 0, next: 0 }))
+
+function startBake() {
+  bakeJobs.forEach((job) => Object.assign(job, { running: true, pass: 0, next: 0 }))
+}
+
+function stepBake() {
+  if (!bakeJobs.some((job) => job.running)) return
+  probeconf.forEach((conf, i) => {
+    const job = bakeJobs[i]
+    if (!job.running) return
+    const totalProbes = conf.w * conf.h * conf.d
+    const count = Math.min(Math.max(1, Math.floor(conf.bakerate * totalProbes)), totalProbes - job.next)
+    probes.forEach((g) => g.visible = false)
+    probes[i].bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, start: job.next, count, pass: job.pass })
+    probes.forEach((g) => g.visible = gi.enabled)
+
+    job.next += count
+    if (job.next >= totalProbes) {
+      job.next = 0
+      job.pass++
+    }
+    if (job.pass > conf.bounces) {
+      job.running = false
+      probeHelpers[i].update()
+    }
+  })
+}
 
 // post processing ???
 
@@ -175,52 +214,13 @@ const gui = new GUI()
 const gi = {
   enabled: true,
   showProbes: false,
-  bounces: 1,
-  status: "idle",
   rebake: () => startBake(),
 }
-
-// rebuild the gi lighting, const probes = new LightProbeGrid(6.2, 1.1, 3.2, x, y, z)
-const totalProbes = probeconf.w * probeconf.h * probeconf.d
-const bakeJob = { running: false, pass: 0, next: 0 }
-
-// this purges the current bake and starts a new one so the scene dims. can we have two and lerp
-// between them when the second finishes? it'd add 
-function startBake() {
-  bakeJob.running = true
-  bakeJob.pass = 0
-  bakeJob.next = 0
-}
-
-function stepBake() {
-  if (!bakeJob.running) return
-  // how many to update per frame. higher = more responsive but risks frame lag - just do em all
-  const count = Math.min(probeconf.bakerate * totalProbes, totalProbes - bakeJob.next)
-
-  // pass 0 - direct light only - don't include any probes, then for pass 1+ turn them on
-  probes.visible = bakeJob.pass > 0
-  probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, start: bakeJob.next, count, pass: bakeJob.pass })
-  probes.visible = gi.enabled
-
-  bakeJob.next += count
-  if (bakeJob.next >= totalProbes) {
-    bakeJob.next = 0
-    bakeJob.pass++
-  }
-  if (bakeJob.pass > probeconf.bounces) {
-    bakeJob.running = false
-    probeHelper.update()
-    gi.status = "idle"
-  } else {
-    gi.status = `pass ${bakeJob.pass}: ${bakeJob.next}/${totalProbes}`
-  }
-}
-gui.add(lighta, "intensity", 0, 10).name("light a")
-gui.add(lightb, "intensity", 0, 10).name("light b")
-gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.visible = v)
-gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelper.visible = v)
+gui.add(lighta, "intensity", 0, 10).name("light a").onChange(startBake)
+gui.add(lightb, "intensity", 0, 10).name("light b").onChange(startBake)
+gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
+gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
 gui.add(gi, "rebake").name("bake")
-gui.add(gi, "status").name("bake status").listen().disable()
 
 renderer.setAnimationLoop(() => {
   controls.update()

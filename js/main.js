@@ -159,7 +159,8 @@ scene.add(lightb)
 await renderer.init()
 
 // setup the grid, fill the 'rooms' with 18 wide, 3 high, 9 deep worth of probes
-const probes = new LightProbeGrid(6.2, 1.1, 3.2, 18, 3, 9)
+const probeconf = {x: 6.2, y: 1.1, z: 3.2, w: 18, h: 3, d: 9, bakerate: 0.5, bounces: 1}
+const probes = new LightProbeGrid(probeconf.x, probeconf.y, probeconf.z, probeconf.w, probeconf.h, probeconf.d)
 probes.position.set(0, 1.3, 0)
 probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, bounces: 1 })
 scene.add(probes)
@@ -180,7 +181,7 @@ const gi = {
 }
 
 // rebuild the gi lighting, const probes = new LightProbeGrid(6.2, 1.1, 3.2, x, y, z)
-const totalProbes = 486 // x * y * z
+const totalProbes = probeconf.w * probeconf.h * probeconf.d
 const bakeJob = { running: false, pass: 0, next: 0 }
 
 // this purges the current bake and starts a new one so the scene dims. can we have two and lerp
@@ -194,7 +195,7 @@ function startBake() {
 function stepBake() {
   if (!bakeJob.running) return
   // how many to update per frame. higher = more responsive but risks frame lag - just do em all
-  const count = Math.min(486, totalProbes - bakeJob.next)
+  const count = Math.min(probeconf.bakerate * totalProbes, totalProbes - bakeJob.next)
 
   // pass 0 - direct light only - don't include any probes, then for pass 1+ turn them on
   probes.visible = bakeJob.pass > 0

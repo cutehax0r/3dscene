@@ -158,7 +158,7 @@ scene.add(lightb)
 
 await renderer.init()
 
-// setup the grid, fill the 'rooms' with 12 wide, 3 high, 6 deep worth of probes
+// setup the grid, fill the 'rooms' with 18 wide, 3 high, 9 deep worth of probes
 const probes = new LightProbeGrid(6.2, 1.1, 3.2, 18, 3, 9)
 probes.position.set(0, 1.3, 0)
 probes.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, bounces: 1 })

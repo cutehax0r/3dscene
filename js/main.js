@@ -11,7 +11,7 @@ function light(x,y,z, color, intensity, distance, decay) {
   lamp.position.y = y
   lamp.position.z = z
   lamp.castShadow = true
-  lamp.shadow.mapSize.set(1024, 1024)
+  lamp.shadow.mapSize.set(4096, 4096)
   lamp.shadow.bias = -0.002
   lamp.shadow.normalBias = 0
   lamp.shadow.radius = 4
@@ -107,11 +107,14 @@ scene.add(col(0.5, 0.75 ))
 scene.add(knot(-1.5, 1.25, 0))
 scene.add(knot(1.5, 1.25, 0))
 
-// some random boxes for GI
+// some random boxes for AO
+scene.add(wall(-1.6, 0.9, 0.05, 0.2, 0.2, 0.2))
+scene.add(wall(-1.45, 0.85, 0.05, 0.1, 0.1, 0.1))
+scene.add(wall(-1.45, 0.84, 0.14, 0.08, 0.08, 0.08))
 
 // lighting
-const lighta = light(-1.75, 1.5, 0, 0xffaa99, 3, 5, .5)
-const lightb = light(1.75, 1.5, 0, 0x99aaff, 3, 5, .5)
+const lighta = light(-1.5, 1.5, 0, 0xffaa99, 3, 5, .5)
+const lightb = light(1.5, 1.5, 0, 0x99aaff, 3, 5, .5)
 scene.add(lighta)
 scene.add(lightb)
 

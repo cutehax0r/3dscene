@@ -126,9 +126,9 @@ const probes = probeconf.map((grid) => {
   const g = new LightProbeGrid(...grid.size, ...grid.count)
   g.position.set(...grid.loc)
   g.bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, bounces: grid.bounces })
-  scene.add(g)
   return g
 })
+probes.forEach((g) => scene.add(g))
 
 const probeHelpers = probes.map((g) => {
   const h = new LightProbeGridHelper(g, 0.03)

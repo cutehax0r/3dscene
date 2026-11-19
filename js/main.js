@@ -11,7 +11,7 @@ function light(x,y,z, color, intensity, distance, decay) {
   lamp.position.y = y
   lamp.position.z = z
   lamp.castShadow = true
-  lamp.shadow.mapSize.set(4096, 4096)
+  lamp.shadow.mapSize.set(1024, 1024)
   lamp.shadow.bias = -0.002
   lamp.shadow.normalBias = 0
   lamp.shadow.radius = 4
@@ -111,6 +111,8 @@ scene.add(knot(1.5, 1.25, 0))
 scene.add(wall(-1.6, 0.9, 0.05, 0.2, 0.2, 0.2))
 scene.add(wall(-1.45, 0.85, 0.05, 0.1, 0.1, 0.1))
 scene.add(wall(-1.45, 0.84, 0.14, 0.08, 0.08, 0.08))
+scene.add(wall(-1.60, 1.02, -0.05, 0.1, 0.04, 0.15))
+scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
 
 // lighting
 const lighta = light(-1.5, 1.5, 0, 0xffaa99, 3, 5, .5)

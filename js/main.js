@@ -6,32 +6,32 @@ import GUI from "lil-gui";
 
 // some funcs for making stuff
 function light(x,y,z, color, intensity, distance, decay) {
-  const light = new THREE.PointLight(color, intensity, distance, decay)
-  light.position.x = x
-  light.position.y = y
-  light.position.z = z
-  light.castShadow = true
-  light.shadow.mapSize.set(1024, 1024)
-  light.shadow.bias = -0.002
-  light.shadow.normalBias = 0
-  light.shadow.radius = 4
-  light.shadow.blurSamples = 8
-  light.shadow.camera.near = 0.1
-  light.shadow.camera.far = 8
-  return light
+  const lamp = new THREE.PointLight(color, intensity, distance, decay)
+  lamp.position.x = x
+  lamp.position.y = y
+  lamp.position.z = z
+  lamp.castShadow = true
+  lamp.shadow.mapSize.set(1024, 1024)
+  lamp.shadow.bias = -0.002
+  lamp.shadow.normalBias = 0
+  lamp.shadow.radius = 4
+  lamp.shadow.blurSamples = 8
+  lamp.shadow.camera.near = 0.1
+  lamp.shadow.camera.far = 8
+  return lamp
 }
 
 function wall(x,y,z,w,h,d) {
-  const wall = new THREE.Mesh(
+  const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(w, h, d),
     new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
   )
-  wall.position.x = x
-  wall.position.y = y
-  wall.position.z = z
-  wall.castShadow = true
-  wall.receiveShadow = true
-  return wall
+  mesh.position.x = x
+  mesh.position.y = y
+  mesh.position.z = z
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  return mesh
 }
 
 function col(x,z) {
@@ -48,14 +48,14 @@ function col(x,z) {
 }
 
 function knot(x,y,z) {
-  const knot = new THREE.Mesh(
+  const mesh = new THREE.Mesh(
     new THREE.TorusKnotGeometry(0.1, 0.033, 100, 50, 2, 3),
     new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.0, envMapIntensity: 1.0 })
   )
-  knot.position.x = x
-  knot.position.y = y
-  knot.position.z = z
-  return knot
+  mesh.position.x = x
+  mesh.position.y = y
+  mesh.position.z = z
+  return mesh
 }
 
 // basic setup
@@ -173,7 +173,6 @@ const gui = new GUI()
 const gi = {
   enabled: true,
   showProbes: false,
-  rebake: () => startBake(),
 }
 gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)

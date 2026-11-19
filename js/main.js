@@ -4,6 +4,60 @@ import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
 import { LightProbeGridHelper } from "three/addons/helpers/LightProbeGridHelper.js";
 import GUI from "lil-gui";
 
+// some funcs for making stuff
+function light(x,y,z, color, intensity, distance, decay) {
+  const light = new THREE.PointLight(color, intensity, distance, decay)
+  light.position.x = x
+  light.position.y = y
+  light.position.z = z
+  light.castShadow = true
+  light.shadow.mapSize.set(1024, 1024)
+  light.shadow.bias = -0.002
+  light.shadow.normalBias = 0
+  light.shadow.radius = 4
+  light.shadow.blurSamples = 8
+  light.shadow.camera.near = 0.1
+  light.shadow.camera.far = 8
+  return light
+}
+
+function wall(x,y,z,w,h,d) {
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
+  )
+  wall.position.x = x
+  wall.position.y = y
+  wall.position.z = z
+  wall.castShadow = true
+  wall.receiveShadow = true
+  return wall
+}
+
+function col(x,z) {
+  const column = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.1, 0.1, .66, 20, 10),
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
+  )
+  column.position.x = x
+  column.position.y = 1.085
+  column.position.z = z
+  column.receiveShadow = true
+  column.castShadow = true
+  return column
+}
+
+function knot(x,y,z) {
+  const knot = new THREE.Mesh(
+    new THREE.TorusKnotGeometry(0.1, 0.033, 100, 50, 2, 3),
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.0, envMapIntensity: 1.0 })
+  )
+  knot.position.x = x
+  knot.position.y = y
+  knot.position.z = z
+  return knot
+}
+
 // basic setup
 
 const canvas = document.querySelector("#scene")
@@ -30,18 +84,6 @@ window.addEventListener('resize', () => {
 })
 
 // geometry
-function wall(x,y,z,w,h,d) {
-  const wall = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
-  )
-  wall.position.x = x
-  wall.position.y = y
-  wall.position.z = z
-  wall.castShadow = true
-  wall.receiveShadow = true
-  return wall
-}
 scene.add(wall(0, .75, 0, 6.1, 0.1, 3))
 
 scene.add(wall(-3, 1.25, 0, .001, 1, 3))
@@ -52,18 +94,6 @@ scene.add(wall(3, 1.25, 0, .001, 1, 3))
 scene.add(wall(0, 1.25, -1.5, 6, 1, .001))
 
 // room content
-function col(x,z) {
-  const column = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.1, 0.1, .66, 20, 10),
-    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
-  )
-  column.position.x = x
-  column.position.y = 1.085
-  column.position.z = z
-  column.receiveShadow = true
-  column.castShadow = true
-  return column
-}
 scene.add(col(-2.5, -0.75 ))
 scene.add(col(-2.5, 0.75 ))
 scene.add(col(-0.5, -0.75 ))
@@ -74,58 +104,20 @@ scene.add(col(2.5, 0.75 ))
 scene.add(col(0.5, -0.75 ))
 scene.add(col(0.5, 0.75 ))
 
-const knota = new THREE.Mesh(
-  new THREE.TorusKnotGeometry(0.1, 0.033, 100, 50, 2, 3),
-  new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.0, envMapIntensity: 1.0 })
-)
-knota.position.x = -1.5
-knota.position.y = 1.25
-scene.add(knota)
-
-const knotb = new THREE.Mesh(
-  new THREE.TorusKnotGeometry(0.1, 0.033, 100, 50, 2, 3),
-  new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.0, envMapIntensity: 1.0 })
-)
-knotb.position.x = 1.5
-knotb.position.y = 1.25
-scene.add(knotb)
+scene.add(knot(-1.5, 1.25, 0))
+scene.add(knot(1.5, 1.25, 0))
 
 // some random boxes for GI
-//
 
 // lighting
-
-const lighta = new THREE.PointLight(0xffaa99, 3, 5, .5)
-lighta.position.x = -1.75
-lighta.position.y = 1.5
-lighta.position.z = 0
-lighta.castShadow = true
-lighta.shadow.mapSize.set(1024, 1024)
-lighta.shadow.bias = -0.002
-lighta.shadow.normalBias = 0
-lighta.shadow.radius = 4
-lighta.shadow.blurSamples = 8
-lighta.shadow.camera.near = 0.1
-lighta.shadow.camera.far = 8
+const lighta = light(-1.75, 1.5, 0, 0xffaa99, 3, 5, .5)
+const lightb = light(1.75, 1.5, 0, 0x99aaff, 3, 5, .5)
 scene.add(lighta)
-
-const lightb = new THREE.PointLight(0x99aaff, 3, 5, .5)
-lightb.position.x = 1.75
-lightb.position.y = 1.5
-lightb.position.z = 0
-lightb.castShadow = true
-lightb.shadow.mapSize.set(1024, 1024)
-lightb.shadow.bias = -0.002
-lightb.shadow.normalBias = 0
-lightb.shadow.radius = 4
-lightb.shadow.blurSamples = 8
-lightb.shadow.camera.near = 0.1
-lightb.shadow.camera.far = 8
 scene.add(lightb)
 
-await renderer.init()
 
 // global illumination
+await renderer.init()
 const probeconf = [
   {loc: [-1.55, 1.3, 0], size: [2.9, 1.1, 3.2], count: [6, 3, 5], bakerate: 0.5, bounces: 1}, // room 1
   {loc: [1.55, 1.3, 0], size: [2.9, 1.1, 3.2], count: [6, 3, 5], bakerate: 0.5, bounces: 1} // room 2
@@ -187,7 +179,6 @@ gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
 gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
-gui.add(gi, "rebake").name("bake")
 
 renderer.setAnimationLoop(() => {
   controls.update()

@@ -216,8 +216,8 @@ const gi = {
   showProbes: false,
   rebake: () => startBake(),
 }
-gui.add(lighta, "intensity", 0, 10).name("light a").onChange(startBake)
-gui.add(lightb, "intensity", 0, 10).name("light b").onChange(startBake)
+gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
+gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
 gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
 gui.add(gi, "rebake").name("bake")

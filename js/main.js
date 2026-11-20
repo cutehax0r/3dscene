@@ -100,6 +100,8 @@ renderer.setSize(1920, 1080, false)
 renderer.setClearColor(0x000000) // this contributes to GI lighting
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
+renderer.toneMapping = THREE.AgXToneMapping
+renderer.toneMappingExposure = 1.0
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, (16/9), 0.1, 1000)
@@ -148,7 +150,7 @@ scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
 
 // and a bucket
 scene.add(bucket(1.6, 0.79, 0, 0.30, 0.2, 0.05))
-scene.add(pool(1.6, 0.96, 0, 0.25, 0xff0000, 2))
+scene.add(pool(1.6, 0.96, 0, 0.25, 0xff0000, 3))
 
 // lighting
 const lighta = light(-2, 1.70, 0, 0xffaa99, 3, 5, .5)

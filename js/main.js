@@ -65,8 +65,8 @@ function knot(x,y,z) {
 const canvas = document.querySelector("#scene")
 const renderer = new THREE.WebGPURenderer({ canvas, antialias: true })
 
+renderer.setPixelRatio(1) // disable retina rendering: renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setSize(1920, 1080, false)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setClearColor(0x000000) // this contributes to GI lighting
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
@@ -178,6 +178,7 @@ const prePass = pass(scene, camera)
 prePass.setMRT(mrt({ output: normalView }))
 
 const aoPass = ao(prePass.getTextureNode("depth"), prePass.getTextureNode(), camera)
+aoPass.resolutionScale = 0.5 // lower resolution to have better speed
 const aoStrength = uniform(1)
 
 const scenePass = pass(scene, camera)

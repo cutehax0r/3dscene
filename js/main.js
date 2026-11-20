@@ -100,8 +100,8 @@ renderer.setSize(1920, 1080, false)
 renderer.setClearColor(0x000000) // this contributes to GI lighting
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
-renderer.toneMapping = THREE.AgXToneMapping
-renderer.toneMappingExposure = 1.0
+renderer.toneMapping = THREE.NeutralToneMapping
+renderer.toneMappingExposure = 0.95
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, (16/9), 0.1, 1000)
@@ -150,11 +150,12 @@ scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
 
 // and a bucket
 scene.add(bucket(1.6, 0.79, 0, 0.30, 0.2, 0.05))
-scene.add(pool(1.6, 0.96, 0, 0.25, 0xff0000, 3))
+const well = pool(1.6, 0.96, 0, 0.25, 0xff0000, 4)
+scene.add(well)
 
 // lighting
-const lighta = light(-2, 1.70, 0, 0xffaa99, 3, 5, .5)
-const lightb = light(2, 1.70, 0, 0x99aaff, 3, 5, .5)
+const lighta = light(-2, 1.70, 0, 0xffaa99, 2.2, 5, .5)
+const lightb = light(2, 1.70, 0, 0x99aaff, 1.75, 5, .5)
 scene.add(lighta)
 scene.add(lightb)
 
@@ -240,4 +241,15 @@ gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
 gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
+gui.add(renderer, "toneMapping", {
+  none: THREE.NoToneMapping,
+  linear: THREE.LinearToneMapping,
+  reinhard: THREE.ReinhardToneMapping,
+  cineon: THREE.CineonToneMapping,
+  aces: THREE.ACESFilmicToneMapping,
+  agx: THREE.AgXToneMapping,
+  neutral: THREE.NeutralToneMapping
+}).name("tone mapper").onChange(() => pipeline.needsUpdate = true)
+gui.add(renderer, "toneMappingExposure", 0, 4).name("exposure")
+gui.add(well.material, "emissiveIntensity", 0, 10).name("pool intensity").onFinishChange(startBake)
 

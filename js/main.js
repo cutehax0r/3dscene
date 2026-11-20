@@ -38,16 +38,34 @@ function wall(x,y,z,w,h,d) {
 }
 
 function col(x,z) {
-  const column = new THREE.Mesh(
+  const mesh = new THREE.Mesh(
     new THREE.CylinderGeometry(0.1, 0.1, .66, 20, 10),
     new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
   )
-  column.position.x = x
-  column.position.y = 1.085
-  column.position.z = z
-  column.receiveShadow = true
-  column.castShadow = true
-  return column
+  mesh.position.x = x
+  mesh.position.y = 1.085
+  mesh.position.z = z
+  mesh.receiveShadow = true
+  mesh.castShadow = true
+  return mesh
+}
+
+function bucket(x,y,z, w, h, t) {
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, w, 0, Math.PI * 2, false);
+  const hole = new THREE.Path();
+  hole.absarc(0, 0, w-t, 0, Math.PI * 2, true);
+  shape.holes.push(hole);
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 64 })
+  geometry.rotateX(-Math.PI / 2)
+  const mesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.5 })
+  )
+  mesh.position.set(x, y, z)
+  mesh.receiveShadow = true
+  mesh.castShadow = true
+  return mesh
 }
 
 function knot(x,y,z) {
@@ -116,6 +134,9 @@ scene.add(wall(-1.45, 0.85, 0.05, 0.1, 0.1, 0.1))
 scene.add(wall(-1.45, 0.84, 0.14, 0.08, 0.08, 0.08))
 scene.add(wall(-1.60, 1.02, -0.05, 0.1, 0.04, 0.15))
 scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
+
+// and a bucket
+scene.add(bucket(1.5, 0.8, 0, 0.35, 0.2, 0.05))
 
 // lighting
 const lighta = light(-1.5, 1.5, 0, 0xffaa99, 3, 5, .5)

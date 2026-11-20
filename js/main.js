@@ -5,6 +5,7 @@ import { reflector, pass, mrt, normalView, builtinAOContext, screenUV, uniform, 
 import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
+import { dof } from "three/addons/tsl/display/DepthOfFieldNode.js";
 import GUI from "lil-gui";
 
 // some funcs for making stuff
@@ -244,7 +245,8 @@ const scenePass = pass(scene, camera)
 scenePass.contextNode = builtinAOContext(mix(1, aoDenoised.sample(screenUV).r, 0.75)) // tone down AO a bit, 0.75 just looks nicer
 
 const scenePassColor = scenePass.getTextureNode()
-const bloomPass = bloom(scenePassColor, 0.75, 0.5, 0.5)
+const dofPass = dof(scenePassColor, scenePass.getViewZNode(), 4, 6, 1)
+const bloomPass = bloom(dofPass, 0.75, 0.5, 0.5)
 bloomPass.smoothWidth.value = 1.5
 
 // vignette: you're going to want to tweak these, maybe make them 'uniform()'
@@ -256,7 +258,7 @@ const vEdge = float(1).sub(smoothstep(vRadius - 0.8, vRadius, vDistance))
 const vignette = mix(1, vEdge, vStrength)
 
 const tint = vec3(1, 0.95, 0.9) // just warm up/cool down the image, also does darken/brighten without touching exposure
-const graded = scenePassColor.add(bloomPass).mul(vec4(tint, 1))
+const graded = dofPass.add(bloomPass).mul(vec4(tint, 1))
 
 const pipeline = new THREE.RenderPipeline(renderer, vec4(mix(vColor, graded.rgb, vignette), 1))
 

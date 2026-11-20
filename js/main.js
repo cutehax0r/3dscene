@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
-import { reflector, pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4, float, smoothstep, color, vec3 } from "three/tsl";
+import { max, exp, reflector, pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4, float, smoothstep, color, vec3 } from "three/tsl";
 import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
@@ -119,15 +119,17 @@ function mirror(x,y,z, d) {
 // basic setup
 
 const canvas = document.querySelector("#scene")
-const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, outputType: THREE.HalfFloatType })
+const hdrCapable = window.matchMedia("(dynamic-range: high)").matches
+const sdrToneMapping = THREE.AgXToneMapping
+const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, outputType: hdrCapable ? THREE.HalfFloatType : undefined })
 
 renderer.setPixelRatio(1) // disable retina rendering: renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setSize(1920, 1080, false)
 renderer.setClearColor(0x000000) // this contributes to GI lighting
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
-renderer.toneMapping = THREE.NeutralToneMapping
-renderer.toneMappingExposure = 1.05
+renderer.toneMapping = hdrCapable ? THREE.NoToneMapping : sdrToneMapping
+renderer.toneMappingExposure = 0.97
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, (16/9), 0.1, 1000)
@@ -260,7 +262,17 @@ const vignette = mix(1, vEdge, vStrength)
 const tint = vec3(1, 0.95, 0.9) // just warm up/cool down the image, also does darken/brighten without touching exposure
 const graded = dofPass.add(bloomPass).mul(vec4(tint, 1))
 
-const pipeline = new THREE.RenderPipeline(renderer, vec4(mix(vColor, graded.rgb, vignette), 1))
+const shoulderStart = 0.8
+const shoulderHeadroom = 3
+const peak = max(max(graded.r, graded.g), graded.b)
+const over = max(peak.sub(shoulderStart), 0)
+const shoulderRange = shoulderHeadroom - shoulderStart
+const rolled = float(shoulderStart).add(float(shoulderRange).mul(float(1).sub(exp(over.negate().div(shoulderRange)))))
+const hdrAmount = uniform(hdrCapable ? 1 : 0)
+const shoulder = peak.lessThanEqual(shoulderStart).select(float(1), rolled.div(max(peak, 0.0001)))
+const limited = graded.rgb.mul(mix(float(1), shoulder, hdrAmount))
+
+const pipeline = new THREE.RenderPipeline(renderer, vec4(mix(vColor, limited, vignette), 1))
 
 
 renderer.setAnimationLoop(() => {
@@ -273,4 +285,12 @@ renderer.setAnimationLoop(() => {
 const gui = new GUI()
 gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
+if (hdrCapable) {
+  const display = { hdr: true }
+  gui.add(display, "hdr").name("hdr output").onChange((on) => {
+    hdrAmount.value = on ? 1 : 0
+    renderer.toneMapping = on ? THREE.NoToneMapping : sdrToneMapping
+    pipeline.needsUpdate = true
+  })
+}
 

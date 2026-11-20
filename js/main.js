@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
-import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4 } from "three/tsl";
+import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4, float, smoothstep, color } from "three/tsl";
 import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
@@ -219,7 +219,18 @@ bloomPass.smoothWidth.value = 1.5
 
 const tint = uniform(new THREE.Color(1, 0.95, 0.9))
 
-const pipeline = new THREE.RenderPipeline(renderer, scenePassColor.add(bloomPass).mul(vec4(tint, 1)))
+// you're going to want to tweak these, maybe even make them 'uniform()' so they can be changed
+// while running.
+const vignetteRadius = 2
+const vignetteStrength = 0.35
+const vignetteColor = color(0x000000)
+const vignetteDistance = screenUV.sub(0.5).length().mul(2)
+const vignetteEdge = float(1).sub(smoothstep(vignetteRadius - 0.8, vignetteRadius, vignetteDistance))
+const vignette = mix(1, vignetteEdge, vignetteStrength)
+
+const graded = scenePassColor.add(bloomPass).mul(vec4(tint, 1))
+
+const pipeline = new THREE.RenderPipeline(renderer, vec4(mix(vignetteColor, graded.rgb, vignette), 1))
 
 
 renderer.setAnimationLoop(() => {

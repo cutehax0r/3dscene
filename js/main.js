@@ -17,10 +17,10 @@ function light(x,y,z, color, intensity, distance, decay) {
   lamp.target.position.set(0, 0.8, 0)
   lamp.target.updateMatrixWorld()
   lamp.castShadow = true
-  lamp.shadow.mapSize.set(2048, 2048)
+  lamp.shadow.mapSize.set(4096, 4096)
   lamp.shadow.bias = -0.0004
   lamp.shadow.normalBias = 0.04
-  lamp.shadow.radius = 2
+  lamp.shadow.radius = 4
   lamp.shadow.blurSamples = 16
   lamp.shadow.camera.near = 0.1
   lamp.shadow.camera.far = 8

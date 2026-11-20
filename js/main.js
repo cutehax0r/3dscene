@@ -15,8 +15,8 @@ function light(x,y,z, color, intensity, distance, decay) {
   lamp.position.z = z
   lamp.castShadow = true
   lamp.shadow.mapSize.set(1024, 1024)
-  lamp.shadow.bias = -0.002
-  lamp.shadow.normalBias = 0
+  lamp.shadow.bias = -0.0004
+  lamp.shadow.normalBias = 0.02
   lamp.shadow.radius = 4
   lamp.shadow.blurSamples = 8
   lamp.shadow.camera.near = 0.1
@@ -56,7 +56,7 @@ function bucket(x,y,z, w, h, t) {
   const hole = new THREE.Path();
   hole.absarc(0, 0, w-t, 0, Math.PI * 2, true);
   shape.holes.push(hole);
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 64 })
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 16 })
   geometry.rotateX(-Math.PI / 2)
   const mesh = new THREE.Mesh(
     geometry,
@@ -136,11 +136,11 @@ scene.add(wall(-1.60, 1.02, -0.05, 0.1, 0.04, 0.15))
 scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
 
 // and a bucket
-scene.add(bucket(1.5, 0.8, 0, 0.35, 0.2, 0.05))
+scene.add(bucket(1.6, 0.79, 0, 0.30, 0.2, 0.05))
 
 // lighting
-const lighta = light(-1.5, 1.5, 0, 0xffaa99, 3, 5, .5)
-const lightb = light(1.5, 1.5, 0, 0x99aaff, 3, 5, .5)
+const lighta = light(-2, 1.70, 0, 0xffaa99, 3, 5, .5)
+const lightb = light(2, 1.70, 0, 0x99aaff, 3, 5, .5)
 scene.add(lighta)
 scene.add(lightb)
 

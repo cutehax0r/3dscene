@@ -2,8 +2,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
 import { LightProbeGridHelper } from "three/addons/helpers/LightProbeGridHelper.js";
-import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix } from "three/tsl";
+import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture } from "three/tsl";
 import { ao } from "three/addons/tsl/display/GTAONode.js";
+import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
 import GUI from "lil-gui";
 
 // some funcs for making stuff
@@ -179,10 +180,11 @@ prePass.setMRT(mrt({ output: normalView }))
 
 const aoPass = ao(prePass.getTextureNode("depth"), prePass.getTextureNode(), camera)
 aoPass.resolutionScale = 0.5 // lower resolution to have better speed
-const aoStrength = uniform(0.5)
+
+const aoDenoised = convertToTexture(denoise(aoPass.getTextureNode(), prePass.getTextureNode("depth"), prePass.getTextureNode(), camera))
 
 const scenePass = pass(scene, camera)
-scenePass.contextNode = builtinAOContext(mix(1, aoPass.getTextureNode().sample(screenUV).r, aoStrength))
+scenePass.contextNode = builtinAOContext(mix(1, aoDenoised.sample(screenUV).r, 0.75)) // tone down AO a bit, 0.75 just looks nicer
 
 const pipeline = new THREE.RenderPipeline(renderer, scenePass)
 
@@ -203,5 +205,4 @@ gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
 gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
-gui.add(aoStrength, "value", 0, 1).name("AO strength")
 

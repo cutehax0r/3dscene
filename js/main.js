@@ -56,7 +56,7 @@ function bucket(x,y,z, w, h, t) {
   const hole = new THREE.Path();
   hole.absarc(0, 0, w-t, 0, Math.PI * 2, true);
   shape.holes.push(hole);
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 16 })
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false, curveSegments: 64 })
   geometry.rotateX(-Math.PI / 2)
   const mesh = new THREE.Mesh(
     geometry,
@@ -65,6 +65,17 @@ function bucket(x,y,z, w, h, t) {
   mesh.position.set(x, y, z)
   mesh.receiveShadow = true
   mesh.castShadow = true
+  return mesh
+}
+
+function pool(x,y,z, r, c, i) {
+  const geometry = new THREE.CircleGeometry(r, 64)
+  geometry.rotateX(-Math.PI / 2)
+  const mesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({ color: 0x000000, emissive: c, emissiveIntensity: i, roughness: 0.2 })
+  )
+  mesh.position.set(x, y, z)
   return mesh
 }
 
@@ -137,6 +148,7 @@ scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
 
 // and a bucket
 scene.add(bucket(1.6, 0.79, 0, 0.30, 0.2, 0.05))
+scene.add(pool(1.6, 0.96, 0, 0.25, 0xff0000, 2))
 
 // lighting
 const lighta = light(-2, 1.70, 0, 0xffaa99, 3, 5, .5)

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
 import { LightProbeGridHelper } from "three/addons/helpers/LightProbeGridHelper.js";
+import { pass } from "three/tsl";
 import GUI from "lil-gui";
 
 // some funcs for making stuff
@@ -184,8 +185,12 @@ gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
 gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
 
+// swapping to use a render pipeline, droping renderer.render(scene, camera), so AO etc. can happen.
+const scenePass = pass(scene, camera)
+const pipeline = new THREE.RenderPipeline(renderer, scenePass)
+
 renderer.setAnimationLoop(() => {
   controls.update()
   stepBake()
-  renderer.render(scene, camera)
+  pipeline.render()
 })

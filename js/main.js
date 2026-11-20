@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
-import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4, float, smoothstep, color, vec3 } from "three/tsl";
+import { reflector, pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4, float, smoothstep, color, vec3 } from "three/tsl";
 import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
@@ -9,16 +9,18 @@ import GUI from "lil-gui";
 
 // some funcs for making stuff
 function light(x,y,z, color, intensity, distance, decay) {
-  const lamp = new THREE.PointLight(color, intensity, distance, decay)
+  const lamp = new THREE.SpotLight(color, intensity, distance, 1.2, 0.5, decay)
   lamp.position.x = x
   lamp.position.y = y
   lamp.position.z = z
+  lamp.target.position.set(0, 0.8, 0)
+  lamp.target.updateMatrixWorld()
   lamp.castShadow = true
-  lamp.shadow.mapSize.set(1024, 1024)
+  lamp.shadow.mapSize.set(2048, 2048)
   lamp.shadow.bias = -0.0004
-  lamp.shadow.normalBias = 0.02
-  lamp.shadow.radius = 4
-  lamp.shadow.blurSamples = 8
+  lamp.shadow.normalBias = 0.04
+  lamp.shadow.radius = 2
+  lamp.shadow.blurSamples = 16
   lamp.shadow.camera.near = 0.1
   lamp.shadow.camera.far = 8
   return lamp
@@ -82,11 +84,47 @@ function pool(x,y,z, r, c, i) {
 function knot(x,y,z) {
   const mesh = new THREE.Mesh(
     new THREE.TorusKnotGeometry(0.1, 0.033, 100, 50, 2, 3),
-    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.0, envMapIntensity: 1.0 })
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.01, roughness: 0.15, envMapIntensity: 1.0 })
   )
   mesh.position.x = x
   mesh.position.y = y
   mesh.position.z = z
+  return mesh
+}
+
+
+function mirrorFrame(x,y,z, r, w, d) {
+  // just playing with lathe geometry here
+  const lip = w * 0.25
+  const points = [
+    new THREE.Vector2(r, 0),
+    new THREE.Vector2(r + w, 0),
+    new THREE.Vector2(r + w, d),
+    new THREE.Vector2(r + w - lip, d),
+    new THREE.Vector2(r + w - lip, d * 0.4),
+    new THREE.Vector2(r, d * 0.4),
+    new THREE.Vector2(r, 0)
+  ]
+  const geometry = new THREE.LatheGeometry(points, 64)
+  geometry.rotateX(Math.PI / 2)
+  const mesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.6, roughness: 0.35 })
+  )
+  mesh.position.set(x, y, z)
+  mesh.receiveShadow = true
+  mesh.castShadow = true
+  return mesh
+}
+
+function mirror(x,y,z, d) {
+  const reflection = reflector()
+  const mesh = new THREE.Mesh(
+    new THREE.CircleGeometry(d, 64),
+    new THREE.MeshBasicNodeMaterial({ colorNode: reflection })
+  )
+  mesh.add(reflection.target)
+  mesh.position.set(x, y, z)
   return mesh
 }
 
@@ -148,13 +186,15 @@ scene.add(wall(-1.45, 0.84, 0.14, 0.08, 0.08, 0.08))
 scene.add(wall(-1.60, 1.02, -0.05, 0.1, 0.04, 0.15))
 scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
 
-// and a bucket
 scene.add(bucket(1.6, 0.79, 0, 0.30, 0.2, 0.05))
 scene.add(pool(1.6, 0.96, 0, 0.25, 0xff0000, 6.5))
 
+scene.add(mirrorFrame(-1.55, 1.25, -1.499, 0.25, 0.08, 0.05))
+scene.add(mirror(-1.55, 1.25, -1.499, 0.23))
+
 // lighting
-const lighta = light(-2, 1.70, 0, 0xffaa99, 2.2, 5, .5)
-const lightb = light(2, 1.70, 0, 0x99aaff, 1.75, 5, .5)
+const lighta = light(-2.6, 1.5, 0, 0xffaa99, 2.2, 5, .5)
+const lightb = light(2.6, 1.5, 0, 0x99aaff, 1.75, 5, .5)
 scene.add(lighta)
 scene.add(lightb)
 
@@ -239,8 +279,6 @@ renderer.setAnimationLoop(() => {
 
 // a small debug gui
 const gui = new GUI()
-// const gi = { enabled: true, }
 gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
-// gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 

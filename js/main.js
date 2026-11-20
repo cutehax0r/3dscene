@@ -119,7 +119,7 @@ function mirror(x,y,z, d) {
 // basic setup
 
 const canvas = document.querySelector("#scene")
-const renderer = new THREE.WebGPURenderer({ canvas, antialias: true })
+const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, outputType: THREE.HalfFloatType })
 
 renderer.setPixelRatio(1) // disable retina rendering: renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setSize(1920, 1080, false)

@@ -101,7 +101,7 @@ renderer.setClearColor(0x000000) // this contributes to GI lighting
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
 renderer.toneMapping = THREE.NeutralToneMapping
-renderer.toneMappingExposure = 0.95
+renderer.toneMappingExposure = 1.05
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, (16/9), 0.1, 1000)

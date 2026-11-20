@@ -179,7 +179,7 @@ prePass.setMRT(mrt({ output: normalView }))
 
 const aoPass = ao(prePass.getTextureNode("depth"), prePass.getTextureNode(), camera)
 aoPass.resolutionScale = 0.5 // lower resolution to have better speed
-const aoStrength = uniform(1)
+const aoStrength = uniform(0.5)
 
 const scenePass = pass(scene, camera)
 scenePass.contextNode = builtinAOContext(mix(1, aoPass.getTextureNode().sample(screenUV).r, aoStrength))
@@ -198,11 +198,10 @@ const gui = new GUI()
 const gi = {
   enabled: true,
   showProbes: false,
-  aoEnabled: true
 }
 gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
 gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
-gui.add(gi, "aoEnabled").name("AO enabled").onChange((v) => aoStrength.value = v ? 1 : 0)
+gui.add(aoStrength, "value", 0, 1).name("AO strength")
 

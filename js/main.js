@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
-import { LightProbeGridHelper } from "three/addons/helpers/LightProbeGridHelper.js";
 import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture } from "three/tsl";
 import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
+import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import GUI from "lil-gui";
 
 // some funcs for making stuff
@@ -150,8 +150,7 @@ scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
 
 // and a bucket
 scene.add(bucket(1.6, 0.79, 0, 0.30, 0.2, 0.05))
-const well = pool(1.6, 0.96, 0, 0.25, 0xff0000, 4)
-scene.add(well)
+scene.add(pool(1.6, 0.96, 0, 0.25, 0xff0000, 6.5))
 
 // lighting
 const lighta = light(-2, 1.70, 0, 0xffaa99, 2.2, 5, .5)
@@ -173,13 +172,6 @@ const probes = probeconf.map((grid) => {
   return g
 })
 probes.forEach((g) => scene.add(g))
-
-const probeHelpers = probes.map((g) => {
-  const h = new LightProbeGridHelper(g, 0.03)
-  h.visible = false
-  scene.add(h)
-  return h
-})
 
 const bakeJobs = probeconf.map(() => ({ running: false, pass: 0, next: 0 }))
 
@@ -205,7 +197,6 @@ function stepBake() {
     }
     if (job.pass > conf.bounces) {
       job.running = false
-      probeHelpers[i].update()
     }
   })
 }
@@ -222,7 +213,11 @@ const aoDenoised = convertToTexture(denoise(aoPass.getTextureNode(), prePass.get
 const scenePass = pass(scene, camera)
 scenePass.contextNode = builtinAOContext(mix(1, aoDenoised.sample(screenUV).r, 0.75)) // tone down AO a bit, 0.75 just looks nicer
 
-const pipeline = new THREE.RenderPipeline(renderer, scenePass)
+const scenePassColor = scenePass.getTextureNode()
+const bloomPass = bloom(scenePassColor, 0.75, 0.5, 0.5)
+bloomPass.smoothWidth.value = 1.5
+
+const pipeline = new THREE.RenderPipeline(renderer, scenePassColor.add(bloomPass))
 
 
 renderer.setAnimationLoop(() => {
@@ -235,21 +230,9 @@ renderer.setAnimationLoop(() => {
 const gui = new GUI()
 const gi = {
   enabled: true,
-  showProbes: false,
 }
 gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
 gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
-gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
-gui.add(renderer, "toneMapping", {
-  none: THREE.NoToneMapping,
-  linear: THREE.LinearToneMapping,
-  reinhard: THREE.ReinhardToneMapping,
-  cineon: THREE.CineonToneMapping,
-  aces: THREE.ACESFilmicToneMapping,
-  agx: THREE.AgXToneMapping,
-  neutral: THREE.NeutralToneMapping
-}).name("tone mapper").onChange(() => pipeline.needsUpdate = true)
 gui.add(renderer, "toneMappingExposure", 0, 4).name("exposure")
-gui.add(well.material, "emissiveIntensity", 0, 10).name("pool intensity").onFinishChange(startBake)
 

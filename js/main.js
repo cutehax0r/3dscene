@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
 import { LightProbeGridHelper } from "three/addons/helpers/LightProbeGridHelper.js";
-import { pass } from "three/tsl";
+import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix } from "three/tsl";
+import { ao } from "three/addons/tsl/display/GTAONode.js";
 import GUI from "lil-gui";
 
 // some funcs for making stuff
@@ -172,25 +173,35 @@ function stepBake() {
   })
 }
 
-// post processing ???
-
-// a small debug gui
-const gui = new GUI()
-const gi = {
-  enabled: true,
-  showProbes: false,
-}
-gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
-gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
-gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
-gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
-
 // swapping to use a render pipeline, droping renderer.render(scene, camera), so AO etc. can happen.
+const prePass = pass(scene, camera)
+prePass.setMRT(mrt({ output: normalView }))
+
+const aoPass = ao(prePass.getTextureNode("depth"), prePass.getTextureNode(), camera)
+const aoStrength = uniform(1)
+
 const scenePass = pass(scene, camera)
+scenePass.contextNode = builtinAOContext(mix(1, aoPass.getTextureNode().sample(screenUV).r, aoStrength))
+
 const pipeline = new THREE.RenderPipeline(renderer, scenePass)
+
 
 renderer.setAnimationLoop(() => {
   controls.update()
   stepBake()
   pipeline.render()
 })
+
+// a small debug gui
+const gui = new GUI()
+const gi = {
+  enabled: true,
+  showProbes: false,
+  aoEnabled: true
+}
+gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
+gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
+gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
+gui.add(gi, "showProbes").name("show probes").onChange((v) => probeHelpers.forEach((h) => h.visible = v))
+gui.add(gi, "aoEnabled").name("AO enabled").onChange((v) => aoStrength.value = v ? 1 : 0)
+

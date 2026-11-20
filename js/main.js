@@ -228,11 +228,8 @@ renderer.setAnimationLoop(() => {
 
 // a small debug gui
 const gui = new GUI()
-const gi = {
-  enabled: true,
-}
+// const gi = { enabled: true, }
 gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
-gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
-gui.add(renderer, "toneMappingExposure", 0, 4).name("exposure")
+// gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
-import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture } from "three/tsl";
+import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4 } from "three/tsl";
 import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
@@ -188,7 +188,7 @@ function stepBake() {
     const count = Math.min(Math.max(1, Math.floor(conf.bakerate * totalProbes)), totalProbes - job.next)
     probes.forEach((g) => g.visible = false)
     probes[i].bake(renderer, scene, { cubemapSize: 8, near: 0.05, far: 10, start: job.next, count, pass: job.pass })
-    probes.forEach((g) => g.visible = gi.enabled)
+    probes.forEach((g) => g.visible = true)
 
     job.next += count
     if (job.next >= totalProbes) {
@@ -217,7 +217,9 @@ const scenePassColor = scenePass.getTextureNode()
 const bloomPass = bloom(scenePassColor, 0.75, 0.5, 0.5)
 bloomPass.smoothWidth.value = 1.5
 
-const pipeline = new THREE.RenderPipeline(renderer, scenePassColor.add(bloomPass))
+const tint = uniform(new THREE.Color(1, 0.95, 0.9))
+
+const pipeline = new THREE.RenderPipeline(renderer, scenePassColor.add(bloomPass).mul(vec4(tint, 1)))
 
 
 renderer.setAnimationLoop(() => {
@@ -231,5 +233,8 @@ const gui = new GUI()
 // const gi = { enabled: true, }
 gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
+gui.add(tint.value, "r", 0, 2).name("tint red")
+gui.add(tint.value, "g", 0, 2).name("tint green")
+gui.add(tint.value, "b", 0, 2).name("tint blue")
 // gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 

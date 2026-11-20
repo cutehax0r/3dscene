@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { LightProbeGrid } from "three/addons/lighting/LightProbeGrid.js";
-import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4, float, smoothstep, color } from "three/tsl";
+import { pass, mrt, normalView, builtinAOContext, screenUV, uniform, mix, convertToTexture, vec4, float, smoothstep, color, vec3 } from "three/tsl";
 import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
@@ -217,20 +217,18 @@ const scenePassColor = scenePass.getTextureNode()
 const bloomPass = bloom(scenePassColor, 0.75, 0.5, 0.5)
 bloomPass.smoothWidth.value = 1.5
 
-const tint = uniform(new THREE.Color(1, 0.95, 0.9))
+// vignette: you're going to want to tweak these, maybe make them 'uniform()'
+const vRadius = 2
+const vStrength = 0.35
+const vColor = color(0x000000)
+const vDistance = screenUV.sub(0.5).length().mul(2)
+const vEdge = float(1).sub(smoothstep(vRadius - 0.8, vRadius, vDistance))
+const vignette = mix(1, vEdge, vStrength)
 
-// you're going to want to tweak these, maybe even make them 'uniform()' so they can be changed
-// while running.
-const vignetteRadius = 2
-const vignetteStrength = 0.35
-const vignetteColor = color(0x000000)
-const vignetteDistance = screenUV.sub(0.5).length().mul(2)
-const vignetteEdge = float(1).sub(smoothstep(vignetteRadius - 0.8, vignetteRadius, vignetteDistance))
-const vignette = mix(1, vignetteEdge, vignetteStrength)
-
+const tint = vec3(1, 0.95, 0.9) // just warm up/cool down the image, also does darken/brighten without touching exposure
 const graded = scenePassColor.add(bloomPass).mul(vec4(tint, 1))
 
-const pipeline = new THREE.RenderPipeline(renderer, vec4(mix(vignetteColor, graded.rgb, vignette), 1))
+const pipeline = new THREE.RenderPipeline(renderer, vec4(mix(vColor, graded.rgb, vignette), 1))
 
 
 renderer.setAnimationLoop(() => {
@@ -244,8 +242,5 @@ const gui = new GUI()
 // const gi = { enabled: true, }
 gui.add(lighta, "intensity", 0, 10).name("light a").onFinishChange(startBake)
 gui.add(lightb, "intensity", 0, 10).name("light b").onFinishChange(startBake)
-gui.add(tint.value, "r", 0, 2).name("tint red")
-gui.add(tint.value, "g", 0, 2).name("tint green")
-gui.add(tint.value, "b", 0, 2).name("tint blue")
 // gui.add(gi, "enabled").name("GI enabled").onChange((v) => probes.forEach((g) => g.visible = v))
 

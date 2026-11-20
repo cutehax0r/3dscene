@@ -93,22 +93,9 @@ function knot(x,y,z) {
 }
 
 
-function mirrorFrame(x,y,z, r, w, d) {
-  // just playing with lathe geometry here
-  const lip = w * 0.25
-  const points = [
-    new THREE.Vector2(r, 0),
-    new THREE.Vector2(r + w, 0),
-    new THREE.Vector2(r + w, d),
-    new THREE.Vector2(r + w - lip, d),
-    new THREE.Vector2(r + w - lip, d * 0.4),
-    new THREE.Vector2(r, d * 0.4),
-    new THREE.Vector2(r, 0)
-  ]
-  const geometry = new THREE.LatheGeometry(points, 64)
-  geometry.rotateX(Math.PI / 2)
+function mirrorFrame(x,y,z, r, w) {
   const mesh = new THREE.Mesh(
-    geometry,
+    new THREE.TorusGeometry(r + w / 2, w / 2, 24, 64),
     new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.6, roughness: 0.35 })
   )
   mesh.position.set(x, y, z)
@@ -189,8 +176,11 @@ scene.add(wall(-1.55, 1.058, 0.02, 0.15, 0.036, 0.1))
 scene.add(bucket(1.6, 0.79, 0, 0.30, 0.2, 0.05))
 scene.add(pool(1.6, 0.96, 0, 0.25, 0xff0000, 6.5))
 
-scene.add(mirrorFrame(-1.55, 1.25, -1.499, 0.25, 0.08, 0.05))
-scene.add(mirror(-1.55, 1.25, -1.499, 0.23))
+// mirrors for reflections
+scene.add(mirrorFrame(-1.55, 1.25, -1.499, 0.25, 0.08))
+scene.add(mirror(-1.55, 1.25, -1.499, 0.26))
+scene.add(mirrorFrame(1.55, 1.25, -1.499, 0.25, 0.08))
+scene.add(mirror(1.55, 1.25, -1.499, 0.26))
 
 // lighting
 const lighta = light(-2.6, 1.5, 0, 0xffaa99, 2.2, 5, .5)

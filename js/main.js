@@ -6,6 +6,7 @@ import { ao } from "three/addons/tsl/display/GTAONode.js";
 import { denoise } from "three/addons/tsl/display/DenoiseNode.js";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { dof } from "three/addons/tsl/display/DepthOfFieldNode.js";
+// import { ClusteredLighting } from "three/addons/lighting/ClusteredLighting.js";
 import GUI from "lil-gui";
 
 // some funcs for making stuff
@@ -126,6 +127,7 @@ const renderer = new THREE.WebGPURenderer({ canvas, antialias: true, outputType:
 renderer.setPixelRatio(1) // disable retina rendering: renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setSize(1920, 1080, false)
 renderer.setClearColor(0x000000) // this contributes to GI lighting
+// renderer.lighting = new ClusteredLighting()
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.VSMShadowMap
 renderer.toneMapping = hdrCapable ? THREE.NoToneMapping : sdrToneMapping
